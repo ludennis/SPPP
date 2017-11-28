@@ -9,8 +9,8 @@ import re
 #CONSTANTS to tweak
 TAIL_GAP_MSEC = 250
 MIN_DURATION = 80
-HOLD_POWER_START_MSEC = 50
-HOLD_POWER = 35
+HOLD_DELAY_POWER_START_MSEC = 50
+HOLD_DELAY_POWER = 35
 COM_SERIAL = 'COM3'
 
 #KEY_SCALE will multiply the value set to the corresponding key
