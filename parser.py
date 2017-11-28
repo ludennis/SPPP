@@ -15,14 +15,26 @@ COM_SERIAL = 'COM3'
 
 #KEY_SCALE will multiply the value set to the corresponding key
 KEY_SCALE = [0, 
-			 1,1,1,1,1,1,1,1,1,1, #keys 1-10
-			 1,1,1,1,1,1,1,1,1,1, #keys 11-20
-			 1,1,1,1,1,1,1,1,1,1, #keys 21-30
-			 1,1,1,1,1,1,1,1,1,1, #keys 31-40
-			 1,1,1,1,1,23,1,1,1,1, #keys 41-50
-			 1,1,1,1,1,1,1,10,1,1, #keys 51-60
-			 1,1,1,1,1,1,1,1,1,1, #keys 61-70
-			 1,1,1,1]             #keys 71-74
+			 0,0,0,0,0,0,0,0,0,0,     #keys 1-10
+			 0,0,0,0,0,0,0,0,0,0,     #keys 11-20
+			 0,0,0,					  #keys 21-23
+			 1,1,1,1,1,1,1,1,1,1,1,1, #Octave 1 keys 24-35
+			 1,1,1,1,1,1,1,1,1,1,1,1, #Octave 2 keys 36-47
+			 1,1,1,1,1,1,1,1,1,1,1,1, #Octave 3 keys 48-59
+			 1,1,1,1,1,1,1,1,1,1,1,1, #Octave 4 keys 60-71
+			 1,1,1,1,1,1,1,1,1,1,1,1, #Octave 5 keys 72-83
+			 1,1,1,1,1]				  #Octave 6 keys 84-88
+
+KEY_OFFSET = [0, 
+			  0,0,0,0,0,0,0,0,0,0,     #keys 1-10
+			  0,0,0,0,0,0,0,0,0,0,     #keys 11-20
+			  0,0,0,				   #keys 21-23
+			  0,0,0,0,0,0,0,0,0,0,0,0, #Octave 1 keys 24-35
+			  0,0,0,0,0,0,0,0,0,0,0,0, #Octave 2 keys 36-47
+			  0,0,0,0,0,0,0,0,0,0,0,0, #Octave 3 keys 48-59
+			  0,0,0,0,0,0,0,0,0,0,0,0, #Octave 4 keys 60-71
+			  0,0,0,0,0,0,0,0,0,0,0,0, #Octave 5 keys 72-83
+			  0,0,0,0,0] 			   #Octave 6 keys 84-88
 
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Arduino Commands')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
@@ -38,7 +50,7 @@ for line in read_file:
 		if match.group('action') == 'NoteOn':
 			match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+) [a-zA-Z]+: (?P<vol>[0-9]+) [a-zA-Z]+: (?P<dur>[0-9]+)',match.group('params'))
 			if match:
-				l.append([time_in_msec,int(match.group('note')),int(int(match.group('vol'))*KEY_SCALE[int(match.group('note'))])])
+				l.append([time_in_msec,int(match.group('note')),int(int(match.group('vol'))*KEY_SCALE[int(match.group('note'))] + KEY_OFFSET[int(match.group('note'))] )])
 		elif match.group('action') == 'NoteOff':
 			match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+)',match.group('params'))
 			if match:
@@ -62,9 +74,9 @@ while i < len(l) - 1:
 		else:
 			l[i][0] = l[i+1][0] - TAIL_GAP_MSEC
 		print 'changed ' + str(l[i]) + '\n'
-	elif l[i][1] != 150 and l[i][2] != 0 and l[i][2] != HOLD_POWER and l[i+1][0] - l[i][0] > MIN_DURATION:
+	elif l[i][1] != 150 and l[i][2] != 0 and l[i][2] != HOLD_DELAY_POWER and l[i+1][0] - l[i][0] > MIN_DURATION:
 		print 'checking to add power hold: ' + str(l[i]) + ' next action ' + str(l[i+1]) 
-		l.insert(i+1,[l[i][0] + HOLD_POWER_START_MSEC,l[i][1],HOLD_POWER])
+		l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
 		print 'added ' + str(l[i+1]) + '\n'
 	i+=1
 
