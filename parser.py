@@ -19,8 +19,8 @@ KEY_SCALE = [0,
 			 1,1,1,1,1,1,1,1,1,1, #keys 11-20
 			 1,1,1,1,1,1,1,1,1,1, #keys 21-30
 			 1,1,1,1,1,1,1,1,1,1, #keys 31-40
-			 1,1,1,1,1,1,1,1,1,1, #keys 41-50
-			 1,1,1,1,1,1,1,1,1,1, #keys 51-60
+			 1,1,1,1,1,23,1,1,1,1, #keys 41-50
+			 1,1,1,1,1,1,1,10,1,1, #keys 51-60
 			 1,1,1,1,1,1,1,1,1,1, #keys 61-70
 			 1,1,1,1]             #keys 71-74
 
@@ -38,7 +38,7 @@ for line in read_file:
 		if match.group('action') == 'NoteOn':
 			match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+) [a-zA-Z]+: (?P<vol>[0-9]+) [a-zA-Z]+: (?P<dur>[0-9]+)',match.group('params'))
 			if match:
-				l.append([time_in_msec,int(match.group('note')),int(match.group('vol')*KEY_SCALE[int(match.group('note'))])])
+				l.append([time_in_msec,int(match.group('note')),int(int(match.group('vol'))*KEY_SCALE[int(match.group('note'))])])
 		elif match.group('action') == 'NoteOff':
 			match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+)',match.group('params'))
 			if match:
