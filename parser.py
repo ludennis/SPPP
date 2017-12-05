@@ -94,16 +94,16 @@ if(args.input_file) :
 	i = 0
 	while i < len(l) - 1:
 		if l[i][1] != 150 and l[i][2] == 0 and l[i][1] == l[i+1][1] and l[i+1][0] - l[i][0] < TAIL_GAP_MSEC:
-			print 'checking: NoteOn' + str(l[i-1]) + ' , NoteOff' + str(l[i]) + ' , next NoteOn' + str(l[i+1])
+			print 'checking: NoteOn{0} , NoteOff{1} , next NoteOn{2}'.format(l[i-1],l[i],l[i+1])
 			if l[i+1][0] - TAIL_GAP_MSEC - l[i-1][0] < MIN_DURATION:
 				l[i][0] = l[i-1][0] + MIN_DURATION
 			else:
 				l[i][0] = l[i+1][0] - TAIL_GAP_MSEC
-			print 'changed ' + str(l[i]) + '\n'
+			print 'changed {0}\n'.format(l[i])
 		elif l[i][1] != 150 and l[i][2] != 0 and l[i][2] != HOLD_DELAY_POWER and l[i+1][0] - l[i][0] > MIN_DURATION:
-			print 'checking to add power hold: ' + str(l[i]) + ' next action ' + str(l[i+1]) 
+			print 'checking to add power hold: {0} next action {1}'.format(l[i],l[i+1])
 			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
-			print 'added ' + str(l[i+1]) + '\n'
+			print 'added {0}\n'.format(l[i+1])
 		i+=1
 
 
@@ -118,11 +118,11 @@ if(args.input_file) :
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py', 'w')
 	write_file.write('import serial\n')
 	write_file.write('import time\n')
-	write_file.write('ser = serial.Serial(\'' + COM_SERIAL + '\', 115200, timeout=5)\n')
+	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
 
 	for i in l:
-		write_file.write('ser.write(\'<' + str(i[0]) + ',' + str(i[1]) + ',' + str(i[2]) + '>\')\n')
+		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(i[0],i[1],i[2]))
 		write_file.write('ser.readline()\n')
 
 	print '\'' + args.input_file[:len(args.input_file)-4] + '.py\' has been created'
@@ -132,7 +132,7 @@ elif (args.test):
 	write_file = open('test.py', 'w')
 	write_file.write('import serial\n')
 	write_file.write('import time\n')
-	write_file.write('ser = serial.Serial(\'{' + COM_SERIAL + '}\', 115200, timeout=5)\n')
+	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
 
 	#test keys 24-96
