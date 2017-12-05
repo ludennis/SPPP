@@ -56,67 +56,106 @@ KEY_OFFSET = [0,
 			 0,0,0,0,0,0,0,0,0,0,     #ignore
 			 0,0,0,0,0,0,0,0,0,0]     #ignore this is up to 150
 
-parser = argparse.ArgumentParser(description='Parses Midi Text file into Arduino Commands')
+#TODO: add an argument that can take "test" to make a testing .py file for arduino
+parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
+parser.add_argument('-test', nargs=5, action='store', help='-test [start_key] [end_key] [min pwr] [max pwr] [pwr inc]', default=5)
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
+
 args = parser.parse_args()
 
-read_file = open(args.input_file, 'r')
-l = []
+#print(args)
 
-for line in read_file:
-	match = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1(?P<params>( [a-zA-Z]+: [0-9]+)+)', line)
-	if match:
-		time_in_msec = int(match.group('min')) * 60000 + int(match.group('sec')) * 1000 + int(match.group('msec'))
-		if match.group('action') == 'NoteOn':
-			match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+) [a-zA-Z]+: (?P<vol>[0-9]+) [a-zA-Z]+: (?P<dur>[0-9]+)',match.group('params'))
-			if match:
-				l.append([time_in_msec,int(match.group('note')),int(int(match.group('vol'))*KEY_SCALE[int(match.group('note'))] + KEY_OFFSET[int(match.group('note'))] )])
-		elif match.group('action') == 'NoteOff':
-			match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+)',match.group('params'))
-			if match:
-				l.append([time_in_msec,int(match.group('note')),int(0)])
-		elif match.group('action') == 'Sustain':
-			match = re.match(r' [a-zA-Z]+: (?P<val>[0-9]+)',match.group('params'))
-			l.append([time_in_msec,int(150),int(match.group('val'))])
+if(args.input_file) :
+	read_file = open(args.input_file, 'r')
+	l = []
 
-
-#sort the list according to note and then timestamp
-l.sort(key=lambda x: (x[1],x[0]))
-
-#cut tail of note when it is immediately played again by 50ms
-#if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50) then timestamp(NoteOff) - 50ms
-i = 0
-while i < len(l) - 1:
-	if l[i][1] != 150 and l[i][2] == 0 and l[i][1] == l[i+1][1] and l[i+1][0] - l[i][0] < TAIL_GAP_MSEC:
-		print 'checking: NoteOn' + str(l[i-1]) + ' , NoteOff' + str(l[i]) + ' , next NoteOn' + str(l[i+1])
-		if l[i+1][0] - TAIL_GAP_MSEC - l[i-1][0] < MIN_DURATION:
-			l[i][0] = l[i-1][0] + MIN_DURATION
-		else:
-			l[i][0] = l[i+1][0] - TAIL_GAP_MSEC
-		print 'changed ' + str(l[i]) + '\n'
-	elif l[i][1] != 150 and l[i][2] != 0 and l[i][2] != HOLD_DELAY_POWER and l[i+1][0] - l[i][0] > MIN_DURATION:
-		print 'checking to add power hold: ' + str(l[i]) + ' next action ' + str(l[i+1]) 
-		l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
-		print 'added ' + str(l[i+1]) + '\n'
-	i+=1
+	for line in read_file:
+		match = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1(?P<params>( [a-zA-Z]+: [0-9]+)+)', line)
+		if match:
+			time_in_msec = int(match.group('min')) * 60000 + int(match.group('sec')) * 1000 + int(match.group('msec'))
+			if match.group('action') == 'NoteOn':
+				match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+) [a-zA-Z]+: (?P<vol>[0-9]+) [a-zA-Z]+: (?P<dur>[0-9]+)',match.group('params'))
+				if match:
+					l.append([time_in_msec,int(match.group('note')),int(int(match.group('vol'))*KEY_SCALE[int(match.group('note'))] + KEY_OFFSET[int(match.group('note'))] )])
+			elif match.group('action') == 'NoteOff':
+				match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+)',match.group('params'))
+				if match:
+					l.append([time_in_msec,int(match.group('note')),int(0)])
+			elif match.group('action') == 'Sustain':
+				match = re.match(r' [a-zA-Z]+: (?P<val>[0-9]+)',match.group('params'))
+				l.append([time_in_msec,int(150),int(match.group('val'))])
 
 
-#sort according to timestamp and change to delta t
-l.sort()
-i = len(l) - 1
-while i > 1:
-	l[i][0] = l[i][0] - l[i-1][0]
-	i-=1
+	#sort the list according to note and then timestamp
+	l.sort(key=lambda x: (x[1],x[0]))
 
-#write files
-write_file = open(args.input_file[:len(args.input_file)-4] + '.py', 'w')
-write_file.write('import serial\n')
-write_file.write('import time\n')
-write_file.write('ser = serial.Serial(\'' + COM_SERIAL + '\', 115200, timeout=5)\n')
-write_file.write('time.sleep(1)\n\n')
+	#cut tail of note when it is immediately played again by 50ms
+	#if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50) then timestamp(NoteOff) - 50ms
+	i = 0
+	while i < len(l) - 1:
+		if l[i][1] != 150 and l[i][2] == 0 and l[i][1] == l[i+1][1] and l[i+1][0] - l[i][0] < TAIL_GAP_MSEC:
+			print 'checking: NoteOn' + str(l[i-1]) + ' , NoteOff' + str(l[i]) + ' , next NoteOn' + str(l[i+1])
+			if l[i+1][0] - TAIL_GAP_MSEC - l[i-1][0] < MIN_DURATION:
+				l[i][0] = l[i-1][0] + MIN_DURATION
+			else:
+				l[i][0] = l[i+1][0] - TAIL_GAP_MSEC
+			print 'changed ' + str(l[i]) + '\n'
+		elif l[i][1] != 150 and l[i][2] != 0 and l[i][2] != HOLD_DELAY_POWER and l[i+1][0] - l[i][0] > MIN_DURATION:
+			print 'checking to add power hold: ' + str(l[i]) + ' next action ' + str(l[i+1]) 
+			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
+			print 'added ' + str(l[i+1]) + '\n'
+		i+=1
 
-for i in l:
-	write_file.write('ser.write(\'<' + str(i[0]) + ',' + str(i[1]) + ',' + str(i[2]) + '>\')\n')
-	write_file.write('ser.readline()\n')
 
-print '\'' + args.input_file[:len(args.input_file)-4] + '.py\' has been created'
+	#sort according to timestamp and change to delta t
+	l.sort()
+	i = len(l) - 1
+	while i > 1:
+		l[i][0] = l[i][0] - l[i-1][0]
+		i-=1
+
+	#write files
+	write_file = open(args.input_file[:len(args.input_file)-4] + '.py', 'w')
+	write_file.write('import serial\n')
+	write_file.write('import time\n')
+	write_file.write('ser = serial.Serial(\'' + COM_SERIAL + '\', 115200, timeout=5)\n')
+	write_file.write('time.sleep(1)\n\n')
+
+	for i in l:
+		write_file.write('ser.write(\'<' + str(i[0]) + ',' + str(i[1]) + ',' + str(i[2]) + '>\')\n')
+		write_file.write('ser.readline()\n')
+
+	print '\'' + args.input_file[:len(args.input_file)-4] + '.py\' has been created'
+elif (args.test):
+	#This will write a testing file to play the piano 
+	#'test.py' will be generated
+	write_file = open('test.py', 'w')
+	write_file.write('import serial\n')
+	write_file.write('import time\n')
+	write_file.write('ser = serial.Serial(\'' + COM_SERIAL + '\', 115200, timeout=5)\n')
+	write_file.write('time.sleep(1)\n\n')
+
+	#test keys 24-96
+	start_key=int(args.test[0])
+	end_key=int(args.test[1])
+	min_pwr=int(args.test[2])
+	max_pwr=int(args.test[3])
+	inc_pwr=int(args.test[4])
+	cur_key = start_key
+	cur_pwr = min_pwr
+
+	while cur_key <= end_key:
+		cur_pwr = min_pwr
+		while cur_pwr <= max_pwr:
+			write_file.write('ser.write(\'<0,' + str(cur_key) + ',' + str(cur_pwr) + '>\')\n')
+			write_file.write('ser.readline()\n')
+			write_file.write('ser.write(\'<1000,' + str(cur_key) + ',0>\')\n')
+			write_file.write('ser.readline()\n')
+			cur_pwr = inc_pwr + cur_pwr
+		cur_key = cur_key + 1
+
+	print ('\ntest.py file has been generated to play from key {0}'
+		  ' to key {1} with the power from {2} to {3} in the '
+	 	  'increment of {4} in every second'
+	 	  ''.format(start_key, end_key, min_pwr, max_pwr,inc_pwr))
+
