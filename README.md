@@ -14,4 +14,4 @@ Features
 
 Commands for 'parser.py'
 1. "parser.py [input_text]" (e.g. "parser.py input.txt")
-2. "parser.py -t [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] (e.g. "parser.py -t 24 96 60 100 5")
+2. "parser.py -t [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr]" (e.g. "parser.py -t 24 96 60 100 5")
