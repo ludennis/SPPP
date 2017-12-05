@@ -12,8 +12,8 @@ Features
 2. [TODO] to have desired max, min, and average power level
 3. [TODO] -t [start_key] [end_key] [pwr]
 4. [TODO] fix a bug that makes the first NoteOn with large time
-5. [TODO] add hold note to -t nargs=5
 
 Commands for 'parser.py'
 1. "parser.py [input_text]" (e.g. "parser.py input.txt")
 2. "parser.py -t [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr]" (e.g. "parser.py -t 24 96 60 100 5")
+3. "parser.py -t [start_key] [end_key] [pwr]" (e.g. "parser.py -t 24 96 70")
