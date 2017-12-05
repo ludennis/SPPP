@@ -9,32 +9,52 @@ import re
 #CONSTANTS to tweak
 TAIL_GAP_MSEC = 250
 MIN_DURATION = 80
-HOLD_DELAY_POWER_START_MSEC = 50
-HOLD_DELAY_POWER = 35
-COM_SERIAL = 'COM3'
+HOLD_DELAY_POWER_START_MSEC = 90
+HOLD_DELAY_POWER = 3
+COM_SERIAL = 'COM11'
 
 #KEY_SCALE will multiply the value set to the corresponding key
 KEY_SCALE = [0, 
-			 0,0,0,0,0,0,0,0,0,0,     #keys 1-10
-			 0,0,0,0,0,0,0,0,0,0,     #keys 11-20
-			 0,0,0,					  #keys 21-23
-			 1,1,1,1,1,1,1,1,1,1,1,1, #Octave 1 keys 24-35
-			 1,1,1,1,1,1,1,1,1,1,1,1, #Octave 2 keys 36-47
-			 1,1,1,1,1,1,1,1,1,1,1,1, #Octave 3 keys 48-59
-			 1,1,1,1,1,1,1,1,1,1,1,1, #Octave 4 keys 60-71
-			 1,1,1,1,1,1,1,1,1,1,1,1, #Octave 5 keys 72-83
-			 1,1,1,1,1]				  #Octave 6 keys 84-88
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,					  #ignore
+			 
+			 
+			 1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00, #Octave 1 keys 24-35
+			 1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00, #Octave 2 keys 36-47
+			 1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00, #Octave 3 keys 48-59
+			 1.00,1.00,1.00,1.00,1.00,1.00,1.00,0.95,0.95,0.94,0.94,0.93, #Octave 4 keys 60-71
+			 0.93,0.92,0.92,0.91,0.91,0.90,0.90,0.89,0.89,0.88,0.88,0.87, #Octave 5 keys 72-83
+			 0.88,0.87,0.86,0.85,0.84,0.83,0.82,0.81,0.80,0.79,0.78,0.77, #Octave 6 keys 84-96
+			 
+			 
+			 0,0,0,0,         #ignore, this is up to 100
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,0,0,0,0,0,0,0]     #ignore this is up to 150
 
 KEY_OFFSET = [0, 
-			  0,0,0,0,0,0,0,0,0,0,     #keys 1-10
-			  0,0,0,0,0,0,0,0,0,0,     #keys 11-20
-			  0,0,0,				   #keys 21-23
-			  0,0,0,0,0,0,0,0,0,0,0,0, #Octave 1 keys 24-35
-			  0,0,0,0,0,0,0,0,0,0,0,0, #Octave 2 keys 36-47
-			  0,0,0,0,0,0,0,0,0,0,0,0, #Octave 3 keys 48-59
-			  0,0,0,0,0,0,0,0,0,0,0,0, #Octave 4 keys 60-71
-			  0,0,0,0,0,0,0,0,0,0,0,0, #Octave 5 keys 72-83
-			  0,0,0,0,0] 			   #Octave 6 keys 84-88
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,				      #ignore
+			 
+			 
+			  11, 10, 10, 10,  9,  9,  9,  8,  8,  8,  7,  7, #Octave 1 keys 24-35
+			   7,  6,  6,  6,  5,  5,  5,  4,  4,  4,  3,  3, #Octave 2 keys 36-47
+			   3,  2,  2,  2,  1,  1,  1,  0,  0, -1, -1, -2, #Octave 3 keys 48-59
+			  -2, -3, -3, -4, -4, -5, -5, -6, -6, -7, -7, -8, #Octave 4 keys 60-71
+			  -8, -9, -9,-10,-10,-11,-11,-12,-12,-13,-13,-14, #Octave 5 keys 72-83
+			 -14,-15,-15,-16,-16,-17,-17,-18,-18,-19,-19,-20, #Octave 6 keys 84-96
+			 
+			 
+			 0,0,0,0,                 #ignore, this is up to 100
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,0,0,0,0,0,0,0,     #ignore
+			 0,0,0,0,0,0,0,0,0,0]     #ignore this is up to 150
 
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Arduino Commands')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
