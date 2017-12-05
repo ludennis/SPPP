@@ -10,8 +10,7 @@ Instructions
 Features
 1. midi text file -> python signals -> arduino -> piano
 2. [TODO] to have desired max, min, and average power level
-3. [TODO] to create MIDI text file that will play each note with incremented power 1 second apart
-4. [TODO[ add hold note to -t functionality
+3. [TODO] -t [start_key] [end_key] [pwr]
 
 Commands for 'parser.py'
 1. "parser.py [input_text]" (e.g. "parser.py input.txt")
