@@ -132,7 +132,7 @@ elif (args.test):
 	write_file = open('test.py', 'w')
 	write_file.write('import serial\n')
 	write_file.write('import time\n')
-	write_file.write('ser = serial.Serial(\'' + COM_SERIAL + '\', 115200, timeout=5)\n')
+	write_file.write('ser = serial.Serial(\'{' + COM_SERIAL + '}\', 115200, timeout=5)\n')
 	write_file.write('time.sleep(1)\n\n')
 
 	#test keys 24-96
@@ -147,9 +147,10 @@ elif (args.test):
 	while cur_key <= end_key:
 		cur_pwr = min_pwr
 		while cur_pwr <= max_pwr:
-			write_file.write('ser.write(\'<0,' + str(cur_key) + ',' + str(cur_pwr) + '>\')\n')
+			write_file.write('ser.write(\'<0,{0},{1}>\')\n'.format(cur_key,cur_pwr))
 			write_file.write('ser.readline()\n')
-			write_file.write('ser.write(\'<1000,' + str(cur_key) + ',0>\')\n')
+			write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_key,cur_pwr))
+			write_file.write('ser.write(\'<1000,{0},0>\')\n'.format(cur_key))
 			write_file.write('ser.readline()\n')
 			cur_pwr = inc_pwr + cur_pwr
 		cur_key = cur_key + 1
