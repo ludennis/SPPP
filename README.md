@@ -10,8 +10,6 @@ Instructions
 Features
 1. midi text file -> python signals -> arduino -> piano
 2. [TODO] to have desired max, min, and average power level
-3. [TODO] -t [start_key] [end_key] [pwr]
-4. [TODO] fix a bug that makes the first NoteOn with large time
 
 Commands for 'parser.py'
 1. "parser.py [input_text]" (e.g. "parser.py input.txt")

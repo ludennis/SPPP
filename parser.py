@@ -70,7 +70,6 @@ def writeKeyWithHold(write_file,t,key,pwr):
 		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
 		write_file.write('ser.readline()\n')
 
-
 #TODO: add an argument that can take "test" to make a testing .py file for arduino
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr]')
@@ -128,6 +127,9 @@ if(args.input_file) :
 	while i > 1:
 		l[i][0] = l[i][0] - l[i-1][0]
 		i-=1
+	#quickfix to make sure the first two notes are with zero t
+	l[0][0] = 0
+	l[1][0] = 0
 
 	#write files
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py', 'w')
