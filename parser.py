@@ -66,6 +66,9 @@ def writeHeader(write_file):
 def writeKey(write_file,t,key,pwr):
 	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(t,key,pwr))
 	write_file.write('ser.readline()\n')
+	if(pwr > 3):
+		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
+		write_file.write('ser.readline()\n')
 
 
 #TODO: add an argument that can take "test" to make a testing .py file for arduino
@@ -181,3 +184,6 @@ elif (args.test):
 			writeKey(write_file,1000,cur_key,0) 
 			cur_key = cur_key + 1
 
+		print ('\ntest.py file has been generated to play from key {0}'
+			  ' to key {1} with the power of {2}'
+		 	  ''.format(start_key, end_key, pwr))
