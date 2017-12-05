@@ -63,6 +63,10 @@ def writeHeader(write_file):
 	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
 
+def writeKey(write_file,t,key,pwr):
+	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(t,key,pwr))
+	write_file.write('ser.readline()\n')
+
 
 #TODO: add an argument that can take "test" to make a testing .py file for arduino
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
@@ -166,3 +170,14 @@ elif (args.test):
 		#this will write a testing file with desired pwr from start_key to end_key
 		write_file = open('test.py', 'w')
 		writeHeader(write_file)
+
+		start_key=int(args.test[0])
+		end_key=int(args.test[1])
+		pwr=int(args.test[2])
+		cur_key = start_key
+		while cur_key <= end_key:
+			writeKey(write_file,0,cur_key,pwr)
+			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_key,pwr))
+			writeKey(write_file,1000,cur_key,0) 
+			cur_key = cur_key + 1
+
