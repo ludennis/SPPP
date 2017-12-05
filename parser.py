@@ -63,7 +63,7 @@ def writeHeader(write_file):
 	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
 
-def writeKey(write_file,t,key,pwr):
+def writeKeyWithHold(write_file,t,key,pwr):
 	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(t,key,pwr))
 	write_file.write('ser.readline()\n')
 	if(pwr > 3):
@@ -179,9 +179,9 @@ elif (args.test):
 		pwr=int(args.test[2])
 		cur_key = start_key
 		while cur_key <= end_key:
-			writeKey(write_file,0,cur_key,pwr)
+			writeKeyWithHold(write_file,0,cur_key,pwr)
 			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_key,pwr))
-			writeKey(write_file,1000,cur_key,0) 
+			writeKeyWithHold(write_file,1000,cur_key,0) 
 			cur_key = cur_key + 1
 
 		print ('\ntest.py file has been generated to play from key {0}'
