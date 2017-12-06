@@ -9,9 +9,13 @@ Instructions
 
 Features
 1. midi text file -> python signals -> arduino -> piano
-2. [TODO] to have desired max, min, and average power level
 
 Commands for 'parser.py'
 1. "parser.py [input_text]" (e.g. "parser.py input.txt")
 2. "parser.py -t [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr]" (e.g. "parser.py -t 24 96 60 100 5")
 3. "parser.py -t [start_key] [end_key] [pwr]" (e.g. "parser.py -t 24 96 70")
+
+TODO's
+1. to have desired max, min, and average power level
+2. to have the multiplier and offset affect test.py
+3. to make the multiplier and offset applied to the power in a (+) (-) way (shift the mean as 0 with equal + and - y axis)
