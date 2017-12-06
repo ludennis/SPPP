@@ -72,7 +72,7 @@ def writeKeyWithHold(write_file,t,key,pwr):
 
 #TODO: add an argument that can take "test" to make a testing .py file for arduino
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
-parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr]')
+parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] [delay_time] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
 
 args = parser.parse_args()
@@ -141,7 +141,7 @@ if(args.input_file) :
 
 	print '\'' + args.input_file[:len(args.input_file)-4] + '.py\' has been created'
 elif (args.test):
-	if len(args.test) == 5:
+	if len(args.test) == 6:
 		#This will write a testing file to play the piano 
 		#'test.py' will be generated
 		write_file = open('test.py', 'w')
@@ -153,8 +153,12 @@ elif (args.test):
 		min_pwr=int(args.test[2])
 		max_pwr=int(args.test[3])
 		inc_pwr=int(args.test[4])
+		delay_time=int(args.test[5])
 		cur_key = start_key
 		cur_pwr = min_pwr
+
+		if(delay_time<HOLD_DELAY_POWER_START_MSEC):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,HOLD_DELAY_POWER_START_MSEC)
 
 		while cur_key <= end_key:
 			cur_pwr = min_pwr
@@ -162,16 +166,17 @@ elif (args.test):
 				write_file.write('ser.write(\'<0,{0},{1}>\')\n'.format(cur_key,cur_pwr))
 				write_file.write('ser.readline()\n')
 				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_key,cur_pwr))
-				write_file.write('ser.write(\'<1000,{0},0>\')\n'.format(cur_key))
+				write_file.write('ser.write(\'<{0},{1},0>\')\n'.format(delay_time,cur_key))
 				write_file.write('ser.readline()\n')
 				cur_pwr = inc_pwr + cur_pwr
 			cur_key = cur_key + 1
 
-		print ('\ntest.py file has been generated to play from key {0}'
-			  ' to key {1} with the power from {2} to {3} in the '
-		 	  'increment of {4} in every second'
-		 	  ''.format(start_key, end_key, min_pwr, max_pwr,inc_pwr))
-	elif len(args.test) == 3:
+		print ('\ntest.py file has been generated to play from keys {0}'
+			  '-{1} with power {2} to {3} in increments of {4}'
+		 	  'delay {5}ms'
+		 	  ''.format(start_key, end_key, min_pwr, max_pwr,inc_pwr,delay_time))
+	elif len(args.test) == 4:
+
 		#this will write a testing file with desired pwr from start_key to end_key
 		write_file = open('test.py', 'w')
 		writeHeader(write_file)
@@ -179,13 +184,20 @@ elif (args.test):
 		start_key=int(args.test[0])
 		end_key=int(args.test[1])
 		pwr=int(args.test[2])
+		delay_time=int(args.test[3])
 		cur_key = start_key
+
+		if(delay_time<HOLD_DELAY_POWER_START_MSEC):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,HOLD_DELAY_POWER_START_MSEC)
+
 		while cur_key <= end_key:
 			writeKeyWithHold(write_file,0,cur_key,pwr)
 			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_key,pwr))
-			writeKeyWithHold(write_file,1000,cur_key,0) 
+			writeKeyWithHold(write_file,delay_time,cur_key,0) 
 			cur_key = cur_key + 1
 
-		print ('\ntest.py file has been generated to play from key {0}'
-			  ' to key {1} with the power of {2}'
-		 	  ''.format(start_key, end_key, pwr))
+		print ('\ntest.py file has been generated to play keys {0}-{1}'
+			  ' with power {2} and delay {3}ms'
+		 	  ''.format(start_key, end_key, pwr, delay_time))
+	else:
+		parser.print_help()
