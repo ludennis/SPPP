@@ -74,15 +74,16 @@ def writeKeyWithHold(write_file,t,key,pwr):
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] [delay_time] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
-
 args = parser.parse_args()
-
 #print(args)
 
 if(args.input_file) :
 	read_file = open(args.input_file, 'r')
+	num_of_notes = 0
+	sum_vol = 0
 	l = []
 
+	#match and add into list l[timestamp,note,vol]
 	for line in read_file:
 		match = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1(?P<params>( [a-zA-Z]+: [0-9]+)+)', line)
 		if match:
@@ -90,7 +91,10 @@ if(args.input_file) :
 			if match.group('action') == 'NoteOn':
 				match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+) [a-zA-Z]+: (?P<vol>[0-9]+) [a-zA-Z]+: (?P<dur>[0-9]+)',match.group('params'))
 				if match:
-					l.append([time_in_msec,int(match.group('note')),int(int(match.group('vol'))*KEY_SCALE[int(match.group('note'))] + KEY_OFFSET[int(match.group('note'))] )])
+					#not to apply KEY_SCALE and KEY_OFFSET here but later
+					num_of_notes = num_of_notes + 1
+					sum_vol = sum_vol + int(match.group('vol'))
+					l.append([time_in_msec,int(match.group('note')),int(int(match.group('vol')))])
 			elif match.group('action') == 'NoteOff':
 				match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+)',match.group('params'))
 				if match:
@@ -99,12 +103,16 @@ if(args.input_file) :
 				match = re.match(r' [a-zA-Z]+: (?P<val>[0-9]+)',match.group('params'))
 				l.append([time_in_msec,int(150),int(match.group('val'))])
 
+	print 'num of notes {0} with sum volume {1} and average vol {2}'.format(num_of_notes,sum_vol,sum_vol/num_of_notes)
+	avg_vol = sum_vol/num_of_notes
 
 	#sort the list according to note and then timestamp
 	l.sort(key=lambda x: (x[1],x[0]))
 
+	#l[[timestamp,note,vol],[timestamp,note,vol], ...]
 	#cut tail of note when it is immediately played again by 50ms
 	#if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50) then timestamp(NoteOff) - 50ms
+	#also change vol according to average vol
 	i = 0
 	while i < len(l) - 1:
 		if l[i][1] != 150 and l[i][2] == 0 and l[i][1] == l[i+1][1] and l[i+1][0] - l[i][0] < TAIL_GAP_MSEC:
@@ -118,6 +126,8 @@ if(args.input_file) :
 			print 'checking to add power hold: {0} next action {1}'.format(l[i],l[i+1])
 			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
 			print 'added {0}\n'.format(l[i+1])
+		if l[i][2] > HOLD_DELAY_POWER:
+			l[i][2] = int((l[i][2] - avg_vol) * KEY_SCALE[l[i][1]] + KEY_OFFSET[l[i][1]] + avg_vol)
 		i+=1
 
 
@@ -201,3 +211,5 @@ elif (args.test):
 		 	  ''.format(start_key, end_key, pwr, delay_time))
 	else:
 		parser.print_help()
+else:
+	parser.print_help()
