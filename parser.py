@@ -63,9 +63,12 @@ def writeHeader(write_file):
 	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
 
-def writeKeyWithHold(write_file,t,key,pwr):
+def writeKey(write_file,t,key,pwr):
 	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(t,key,pwr))
 	write_file.write('ser.readline()\n')
+
+def writeKeyWithHold(write_file,t,key,pwr):
+	writeKey(write_file,t,key,pwr)
 	if(pwr > 3):
 		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
 		write_file.write('ser.readline()\n')
@@ -94,7 +97,6 @@ if(args.input_file) :
 			if match.group('action') == 'NoteOn':
 				match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+) [a-zA-Z]+: (?P<vol>[0-9]+) [a-zA-Z]+: (?P<dur>[0-9]+)',match.group('params'))
 				if match:
-					#not to apply KEY_SCALE and KEY_OFFSET here but later
 					num_of_notes = num_of_notes + 1
 					sum_vol = sum_vol + int(match.group('vol'))
 					l.append([time_in_msec,int(match.group('note')),int(int(match.group('vol')))])
@@ -147,11 +149,8 @@ if(args.input_file) :
 	#write files
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py', 'w')
 	writeHeader(write_file)
-
 	for i in l:
-		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(i[0],i[1],i[2]))
-		write_file.write('ser.readline()\n')
-
+		writeKey(write_file,i[0],i[1],i[2])
 	print '\'' + args.input_file[:len(args.input_file)-4] + '.py\' has been created'
 elif (args.test):
 	#TODO: to apply multiplier and offset
@@ -175,11 +174,9 @@ elif (args.test):
 		while cur_key <= end_key:
 			cur_pwr = min_pwr
 			while cur_pwr <= max_pwr:
-				write_file.write('ser.write(\'<0,{0},{1}>\')\n'.format(cur_key,adjust_vol(cur_pwr,cur_key,0)))
-				write_file.write('ser.readline()\n')
+				writeKey(write_file,0,cur_pwr,cur_key)
 				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_key,adjust_vol(cur_pwr,cur_key,0)))
-				write_file.write('ser.write(\'<{0},{1},0>\')\n'.format(delay_time,cur_key))
-				write_file.write('ser.readline()\n')
+				writeKey(delay_time,cur_key,0)
 				cur_pwr = inc_pwr + cur_pwr
 			cur_key = cur_key + 1
 
