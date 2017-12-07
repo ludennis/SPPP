@@ -62,6 +62,7 @@ def writeHeader(write_file):
 	write_file.write('import time\n')
 	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
+	write_file.write('#<time,key,power>\n')
 
 def writeKey(write_file,t,key,pwr):
 	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(t,key,pwr))
@@ -80,10 +81,12 @@ def adjust_vol(vol,note,avg):
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] [delay_time] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
+parser.add_argument('--target-average', type=int, help='--target-average=[target_power_average]')
 args = parser.parse_args()
 #print(args)
 
 if(args.input_file) :
+
 	read_file = open(args.input_file, 'r')
 	num_of_notes = 0
 	sum_vol = 0
@@ -107,9 +110,12 @@ if(args.input_file) :
 			elif match.group('action') == 'Sustain':
 				match = re.match(r' [a-zA-Z]+: (?P<val>[0-9]+)',match.group('params'))
 				l.append([time_in_msec,int(150),int(match.group('val'))])
-
-	print 'num of notes {0} with sum volume {1} and average vol {2}'.format(num_of_notes,sum_vol,sum_vol/num_of_notes)
-	avg_vol = sum_vol/num_of_notes
+	
+	if args.target_average == None:
+		avg_vol = sum_vol/num_of_notes
+	else:
+		avg_vol = args.target_average
+	print 'num of notes {0} with sum volume {1} and average vol {2}'.format(num_of_notes,sum_vol,avg_vol)
 
 	#sort the list according to note and then timestamp
 	l.sort(key=lambda x: (x[1],x[0]))
@@ -121,16 +127,16 @@ if(args.input_file) :
 	i = 0
 	while i < len(l) - 1:
 		if l[i][1] != 150 and l[i][2] == 0 and l[i][1] == l[i+1][1] and l[i+1][0] - l[i][0] < TAIL_GAP_MSEC:
-			print 'checking: NoteOn{0} , NoteOff{1} , next NoteOn{2}'.format(l[i-1],l[i],l[i+1])
+			# print 'checking: NoteOn{0} , NoteOff{1} , next NoteOn{2}'.format(l[i-1],l[i],l[i+1])
 			if l[i+1][0] - TAIL_GAP_MSEC - l[i-1][0] < MIN_DURATION:
 				l[i][0] = l[i-1][0] + MIN_DURATION
 			else:
 				l[i][0] = l[i+1][0] - TAIL_GAP_MSEC
-			print 'changed {0}\n'.format(l[i])
+			# print 'changed {0}\n'.format(l[i])
 		elif l[i][1] != 150 and l[i][2] != 0 and l[i][2] != HOLD_DELAY_POWER and l[i+1][0] - l[i][0] > MIN_DURATION:
-			print 'checking to add power hold: {0} next action {1}'.format(l[i],l[i+1])
+			# print 'checking to add power hold: {0} next action {1}'.format(l[i],l[i+1])
 			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
-			print 'added {0}\n'.format(l[i+1])
+			# print 'added {0}\n'.format(l[i+1])
 		if l[i][2] > HOLD_DELAY_POWER:
 			l[i][2] = adjust_vol(l[i][2],l[i][1],avg_vol)
 		i+=1
@@ -174,7 +180,7 @@ elif (args.test):
 		while cur_key <= end_key:
 			cur_pwr = min_pwr
 			while cur_pwr <= max_pwr:
-				writeKey(write_file,0,cur_pwr,cur_key)
+				writeKey(write_file,0,cur_key,adjust_vol(cur_pwr,cur_key,0 if args.target_average==None else args.target_average))
 				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_key,adjust_vol(cur_pwr,cur_key,0)))
 				writeKey(delay_time,cur_key,0)
 				cur_pwr = inc_pwr + cur_pwr
@@ -199,7 +205,7 @@ elif (args.test):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,HOLD_DELAY_POWER_START_MSEC)
 
 		while cur_key <= end_key:
-			writeKeyWithHold(write_file,0,cur_key,adjust_vol(pwr,cur_key,0))
+			writeKeyWithHold(write_file,0,cur_key,adjust_vol(pwr,cur_key,0 if args.target_average == None else args.target_average))
 			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_key,adjust_vol(pwr,cur_key,0)))
 			writeKeyWithHold(write_file,delay_time,cur_key,0) 
 			cur_key = cur_key + 1
