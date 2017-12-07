@@ -70,6 +70,9 @@ def writeKeyWithHold(write_file,t,key,pwr):
 		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
 		write_file.write('ser.readline()\n')
 
+def adjust_vol(vol,note,avg):
+	return int((vol-avg) * KEY_SCALE[note] + KEY_OFFSET[note] + avg)
+
 #TODO: add an argument that can take "test" to make a testing .py file for arduino
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] [delay_time] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
@@ -127,7 +130,7 @@ if(args.input_file) :
 			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
 			print 'added {0}\n'.format(l[i+1])
 		if l[i][2] > HOLD_DELAY_POWER:
-			l[i][2] = int((l[i][2] - avg_vol) * KEY_SCALE[l[i][1]] + KEY_OFFSET[l[i][1]] + avg_vol)
+			l[i][2] = adjust_vol(l[i][2],l[i][1],avg_vol)
 		i+=1
 
 
@@ -151,13 +154,12 @@ if(args.input_file) :
 
 	print '\'' + args.input_file[:len(args.input_file)-4] + '.py\' has been created'
 elif (args.test):
+	#TODO: to apply multiplier and offset
+	#generates a 'test.py' to play the piano 
 	if len(args.test) == 6:
-		#This will write a testing file to play the piano 
-		#'test.py' will be generated
 		write_file = open('test.py', 'w')
 		writeHeader(write_file)
 
-		#test keys 24-96
 		start_key=int(args.test[0])
 		end_key=int(args.test[1])
 		min_pwr=int(args.test[2])
@@ -173,9 +175,9 @@ elif (args.test):
 		while cur_key <= end_key:
 			cur_pwr = min_pwr
 			while cur_pwr <= max_pwr:
-				write_file.write('ser.write(\'<0,{0},{1}>\')\n'.format(cur_key,cur_pwr))
+				write_file.write('ser.write(\'<0,{0},{1}>\')\n'.format(cur_key,adjust_vol(cur_pwr,cur_key,0)))
 				write_file.write('ser.readline()\n')
-				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_key,cur_pwr))
+				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_key,adjust_vol(cur_pwr,cur_key,0)))
 				write_file.write('ser.write(\'<{0},{1},0>\')\n'.format(delay_time,cur_key))
 				write_file.write('ser.readline()\n')
 				cur_pwr = inc_pwr + cur_pwr
@@ -186,7 +188,6 @@ elif (args.test):
 		 	  'delay {5}ms'
 		 	  ''.format(start_key, end_key, min_pwr, max_pwr,inc_pwr,delay_time))
 	elif len(args.test) == 4:
-
 		#this will write a testing file with desired pwr from start_key to end_key
 		write_file = open('test.py', 'w')
 		writeHeader(write_file)
@@ -201,8 +202,8 @@ elif (args.test):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,HOLD_DELAY_POWER_START_MSEC)
 
 		while cur_key <= end_key:
-			writeKeyWithHold(write_file,0,cur_key,pwr)
-			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_key,pwr))
+			writeKeyWithHold(write_file,0,cur_key,adjust_vol(pwr,cur_key,0))
+			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_key,adjust_vol(pwr,cur_key,0)))
 			writeKeyWithHold(write_file,delay_time,cur_key,0) 
 			cur_key = cur_key + 1
 

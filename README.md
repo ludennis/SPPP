@@ -18,5 +18,3 @@ Commands for 'parser.py'
 
 TODO's
 1. to have desired max, min, and average power level
-2. to have the multiplier and offset affect test.py
-3. to make the multiplier and offset applied to the power in a (+) (-) way (shift the mean as 0 with equal + and - y axis)
