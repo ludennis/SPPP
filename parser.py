@@ -64,12 +64,12 @@ def writeHeader(write_file):
 	write_file.write('time.sleep(1)\n\n')
 	write_file.write('#<time,key,power>\n')
 
-def writeKey(write_file,t,key,pwr):
-	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(t,key,pwr))
+def writeKey(write_file,time,key,pwr):
+	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(time,key,pwr))
 	write_file.write('ser.readline()\n')
 
-def writeKeyWithHold(write_file,t,key,pwr):
-	writeKey(write_file,t,key,pwr)
+def writeKeyWithHold(write_file,time,key,pwr):
+	writeKey(write_file,time,key,pwr)
 	if(pwr > 3):
 		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
 		write_file.write('ser.readline()\n')
@@ -125,6 +125,7 @@ if(args.input_file) :
 	#if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50) then timestamp(NoteOff) - 50ms
 	#also change vol according to average vol
 	i = 0
+
 	while i < len(l) - 1:
 		if l[i][1] != 150 and l[i][2] == 0 and l[i][1] == l[i+1][1] and l[i+1][0] - l[i][0] < TAIL_GAP_MSEC:
 			# print 'checking: NoteOn{0} , NoteOff{1} , next NoteOn{2}'.format(l[i-1],l[i],l[i+1])
@@ -138,7 +139,7 @@ if(args.input_file) :
 			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
 			# print 'added {0}\n'.format(l[i+1])
 		if l[i][2] > HOLD_DELAY_POWER:
-			l[i][2] = adjust_vol(l[i][2],l[i][1],avg_vol)
+			l[i][2] = adjust_vol(vol=l[i][2],note=l[i][1],avg_vol)
 		i+=1
 
 
@@ -180,9 +181,9 @@ elif (args.test):
 		while cur_key <= end_key:
 			cur_pwr = min_pwr
 			while cur_pwr <= max_pwr:
-				writeKey(write_file,0,cur_key,adjust_vol(cur_pwr,cur_key,0 if args.target_average==None else args.target_average))
+				writeKey(write_file,time=0,cur_key,adjust_vol(cur_pwr,cur_key,0 if args.target_average==None else args.target_average))
 				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_key,adjust_vol(cur_pwr,cur_key,0)))
-				writeKey(delay_time,cur_key,0)
+				writeKey(delay_time,cur_key,pwr=0)
 				cur_pwr = inc_pwr + cur_pwr
 			cur_key = cur_key + 1
 
@@ -205,9 +206,9 @@ elif (args.test):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,HOLD_DELAY_POWER_START_MSEC)
 
 		while cur_key <= end_key:
-			writeKeyWithHold(write_file,0,cur_key,adjust_vol(pwr,cur_key,0 if args.target_average == None else args.target_average))
+			writeKeyWithHold(write_file,time=0,cur_key,adjust_vol(pwr,cur_key,0 if args.target_average == None else args.target_average))
 			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_key,adjust_vol(pwr,cur_key,0)))
-			writeKeyWithHold(write_file,delay_time,cur_key,0) 
+			writeKeyWithHold(write_file,delay_time,cur_key,pwr=0) 
 			cur_key = cur_key + 1
 
 		print ('\ntest.py file has been generated to play keys {0}-{1}'
