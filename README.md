@@ -11,8 +11,9 @@ Commands for 'parser.py'
 1. "parser.py [input_text]" (e.g. "parser.py input.txt")
 2. "parser.py -t [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr]" (e.g. "parser.py -t 24 96 60 100 5")
 3. "parser.py -t [start_key] [end_key] [pwr]" (e.g. "parser.py -t 24 96 70")
-4. "parser.py -h" 
+4. "parser.py -h" (shows the list of commands and their parameters)
 5. "parser.py --target-average=[target_average_power]" (e.g. "parser.py departures.txt --target-average=50")
 
 TODO's
 1. to have desired max, min, and average power level
+2. add version
