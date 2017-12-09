@@ -64,15 +64,11 @@ def writeHeader(write_file):
 	write_file.write('time.sleep(1)\n\n')
 	write_file.write('#<time,key,power>\n')
 
-def writeKey(write_file,time,key,pwr):
+def writeKey(write_file,time,key,pwr,hold=False):
 	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(time,key,pwr))
-	write_file.write('ser.readline()\n')
-
-def writeKeyWithHold(write_file,time,key,pwr):
-	writeKey(write_file,time,key,pwr)
-	if(pwr > 3):
+	if(hold==True and pwr > 3):
 		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
-		write_file.write('ser.readline()\n')
+	write_file.write('ser.readline()\n')
 
 def adjust_vol(vol,note,avg):
 	return int((vol-avg) * KEY_SCALE[note] + KEY_OFFSET[note] + avg)
@@ -139,7 +135,7 @@ if(args.input_file) :
 			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
 			# print 'added {0}\n'.format(l[i+1])
 		if l[i][2] > HOLD_DELAY_POWER:
-			l[i][2] = adjust_vol(vol=l[i][2],note=l[i][1],avg_vol)
+			l[i][2] = adjust_vol(vol=l[i][2],note=l[i][1],avg=avg_vol)
 		i+=1
 
 
@@ -181,7 +177,7 @@ elif (args.test):
 		while cur_key <= end_key:
 			cur_pwr = min_pwr
 			while cur_pwr <= max_pwr:
-				writeKey(write_file,time=0,cur_key,adjust_vol(cur_pwr,cur_key,0 if args.target_average==None else args.target_average))
+				writeKey(write_file=write_file,time=0,key=cur_key,vol=adjust_vol(cur_pwr,cur_key,0 if args.target_average==None else args.target_average))
 				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_key,adjust_vol(cur_pwr,cur_key,0)))
 				writeKey(delay_time,cur_key,pwr=0)
 				cur_pwr = inc_pwr + cur_pwr
@@ -206,9 +202,9 @@ elif (args.test):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,HOLD_DELAY_POWER_START_MSEC)
 
 		while cur_key <= end_key:
-			writeKeyWithHold(write_file,time=0,cur_key,adjust_vol(pwr,cur_key,0 if args.target_average == None else args.target_average))
+			writeKey(write_file=write_file,time=0,key=cur_key,vol=adjust_vol(pwr,cur_key,0 if args.target_average == None else args.target_average),hold=True)
 			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_key,adjust_vol(pwr,cur_key,0)))
-			writeKeyWithHold(write_file,delay_time,cur_key,pwr=0) 
+			writeKey(write_file=write_file,time=delay_time,key=cur_key,pwr=0, hold=True) 
 			cur_key = cur_key + 1
 
 		print ('\ntest.py file has been generated to play keys {0}-{1}'
