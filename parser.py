@@ -88,7 +88,29 @@ if(args.input_file):
 	sum_vol = 0
 	l = []
 
-	
+	# dict_l = []
+
+	# for line in read_file:
+	# 	NoteOn =  re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1 note: (?P<note>[0-9]+) vol: (?P<val>[0-9]+) dur: (?P<dur>[0-9]+)$',line)
+	# 	NoteOff = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1 note: (?P<note>[0-9]+)$',line)
+	# 	Sustain = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1 value: (?P<val>[0-9]+)$',line)
+
+	# 	match = sorted([NoteOn,NoteOff,Sustain],reverse=True)[0]
+	# 	if match:
+	# 		d = match.groupdict()
+	# 		timestamp = int(d['min']) * 60000 + int(d['sec']) * 1000 + int(d['msec'])
+	# 		dict_l.append({'time':timestamp,
+	# 					   'note':int(d['note']) if 'note' in d else int(150),
+	# 					   'val':int(d['val']) if 'val' in d else int(0)})
+	# 	else:
+	# 		continue
+
+	# for i, entry in enumerate(dict_l):
+	# 	print i, '--->', entry
+
+
+	# read_file = open(args.input_file, 'r')
+
 	#match and add into list l[timestamp,note,vol]
 	for line in read_file:
 		match = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1(?P<params>( [a-zA-Z]+: [0-9]+)+)', line)
