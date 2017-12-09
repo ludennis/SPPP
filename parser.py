@@ -81,13 +81,14 @@ parser.add_argument('--target-average', type=int, help='--target-average=[target
 args = parser.parse_args()
 #print(args)
 
-if(args.input_file) :
+if(args.input_file):
 
 	read_file = open(args.input_file, 'r')
 	num_of_notes = 0
 	sum_vol = 0
 	l = []
 
+	
 	#match and add into list l[timestamp,note,vol]
 	for line in read_file:
 		match = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1(?P<params>( [a-zA-Z]+: [0-9]+)+)', line)
@@ -106,7 +107,6 @@ if(args.input_file) :
 			elif match.group('action') == 'Sustain':
 				match = re.match(r' [a-zA-Z]+: (?P<val>[0-9]+)',match.group('params'))
 				l.append([time_in_msec,int(150),int(match.group('val'))])
-	
 	if args.target_average == None:
 		avg_vol = sum_vol/num_of_notes
 	else:
@@ -121,7 +121,6 @@ if(args.input_file) :
 	#if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50) then timestamp(NoteOff) - 50ms
 	#also change vol according to average vol
 	i = 0
-
 	while i < len(l) - 1:
 		if l[i][1] != 150 and l[i][2] == 0 and l[i][1] == l[i+1][1] and l[i+1][0] - l[i][0] < TAIL_GAP_MSEC:
 			# print 'checking: NoteOn{0} , NoteOff{1} , next NoteOn{2}'.format(l[i-1],l[i],l[i+1])
@@ -134,10 +133,10 @@ if(args.input_file) :
 			# print 'checking to add power hold: {0} next action {1}'.format(l[i],l[i+1])
 			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
 			# print 'added {0}\n'.format(l[i+1])
-		if l[i][2] > HOLD_DELAY_POWER:
+		if l[i][2] > HOLD_DELAY_POWER and l[i][1] != 150:
+			print l[i][2], l[i][1]
 			l[i][2] = adjust_vol(vol=l[i][2],note=l[i][1],avg=avg_vol)
 		i+=1
-
 
 	#sort according to timestamp and change to delta t
 	l.sort()
