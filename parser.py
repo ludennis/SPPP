@@ -156,7 +156,6 @@ if(args.input_file):
 			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
 			# print 'added {0}\n'.format(l[i+1])
 		if l[i][2] > HOLD_DELAY_POWER and l[i][1] != 150:
-			print l[i][2], l[i][1]
 			l[i][2] = adjust_vol(vol=l[i][2],note=l[i][1],avg=avg_vol)
 		i+=1
 
