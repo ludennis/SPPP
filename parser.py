@@ -84,9 +84,6 @@ args = parser.parse_args()
 if(args.input_file):
 
 	read_file = open(args.input_file, 'r')
-	num_of_notes = 0
-	sum_vol = 0
-	l = []
 
 	dict_l = []
 
@@ -105,11 +102,24 @@ if(args.input_file):
 		else:
 			continue
 
-	for i, entry in enumerate(dict_l):
-		print i, '--->', entry
+	num_of_notes = 0
+	sum_vol = 0
+	for i, d in enumerate(dict_l):
+		if d['note'] != 150 and d['val'] != 0: 
+			num_of_notes+=1
+			sum_vol+=d['note']
+			print i, '--->', d, num_of_notes, sum_vol
+
+	avg = sum_vol/num_of_notes if args.target_average == None else args.target_average
+	print avg
+
+	dict_l.sort(key=lambda x: (x['note'],x['time']))
 
 
 	read_file = open(args.input_file, 'r')
+	num_of_notes = 0
+	sum_vol = 0
+	l = []
 
 	#match and add into list l[timestamp,note,vol]
 	for line in read_file:
