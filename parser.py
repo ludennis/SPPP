@@ -2,15 +2,15 @@ import argparse
 import re
 
 #CONSTANTS to tweak
-# TAIL_GAP_MSEC => I forgot
-# MIN_DURATION => I forgot
+# TAIL_GAP_MSEC => Something to do with notes being played closed to each
+# MIN_NOTE_DUR => min time for a note to be playable
 # HOLD_DELAY_POWER_START_MSEC => time when solarnoid will start holding
 # HOLD_DELAY_POWER => power when the solarnoid is holding
 # COM_SERIAL => serial number when connecting to Arduino
 # SUSTAIN_NOTE => the note that a sustain will be used 
 
 TAIL_GAP_MSEC = 250
-MIN_DURATION = 140
+MIN_NOTE_DUR = 140
 HOLD_DELAY_POWER_START_MSEC = 170
 HOLD_DELAY_POWER = 50
 COM_SERIAL = 'COM11'
@@ -88,7 +88,7 @@ if(args.input_file):
 
 	read_file = open(args.input_file, 'r')
 
-	dict_l = []
+	notes = []
 	num_of_notes = 0
 	sum_vol = 0
 
@@ -101,25 +101,47 @@ if(args.input_file):
 		if match:
 			d = match.groupdict()
 			timestamp = int(d['min']) * 60000 + int(d['sec']) * 1000 + int(d['msec'])
-			dict_l.append({'time':timestamp,
-						   'note':int(d['note']) if 'note' in d else SUSTAIN_NOTE,
-						   'val':int(d['val']) if 'val' in d else int(0)})
+			notes.append({'time':timestamp,
+						  'note':int(d['note']) if 'note' in d else SUSTAIN_NOTE,
+						  'val':int(d['val']) if 'val' in d else int(0),
+						  'action':d['action']})
 			if d['action'] == 'NoteOn': 
 				num_of_notes+=1 
 				sum_vol+=int(d['val']) 
 		else:
 			continue
 
-	avg = sum_vol/num_of_notes if args.target_average == None else args.target_average
-	print avg
+	avg_vol = sum_vol/num_of_notes if args.target_average == None else args.target_average
 
 	#need to check this
-	dict_l.sort(key=lambda x: (x['note'],x['time']))
+	notes.sort(key=lambda x: (x['note'],x['time']))
 
-	for index, cur_d in enumerate(dict_l):
-		if index > 0: 
-			prev_d = dict_l[index-1] 
-			print prev_d,'-->',cur_d
+	# 1. cut the tail(end) of a note when it's immediately played again in 50ms 
+	#	 if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50ms) then timestamp(NoteOff) - 50ms
+	# 2. adds hold note 
+	# 3. adjust volume
+
+	print 'TAIL_GAP_MSEC: {0}, MIN_NOTE_DUR: {1}'.format(TAIL_GAP_MSEC,MIN_NOTE_DUR)
+	for index, note in enumerate(notes):
+		if note['action'] == 'NoteOff' and notes[index+1]['action'] == 'NoteOn':
+			noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
+			if abs(noteOff['time'] - nextNoteOn['time']) < TAIL_GAP_MSEC:
+				if nextNoteOn['time'] - TAIL_GAP_MSEC - noteOn['time'] < MIN_NOTE_DUR: 
+					noteOff['time'] = noteOn['time'] + MIN_NOTE_DUR
+				else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC
+		elif note['action'] == 'NoteOn':
+			if notes[index+1]['time'] - note['time'] > MIN_NOTE_DUR:
+				notes.insert(index+1,{'time': note['time'] + HOLD_DELAY_POWER_START_MSEC,
+									  'note': note['note'],
+									  'val': HOLD_DELAY_POWER,
+									  'action': 'NoteOn'})
+		if note['action'] == 'NoteOn' and note['val'] != HOLD_DELAY_POWER:
+			note['val'] = adjust_vol(vol=note['val'],note=note['note'],avg=avg_vol)
+
+	notes.sort(key=lambda x: x['time'])
+	
+	#TODO find elegant pythonic way to updat timestamp to delta t
+	# (cur['time']=next['time']-cur['time']) for cur,next in zip(notes[:-1],notes[1:])
 
 
 
@@ -163,12 +185,12 @@ if(args.input_file):
 	while i < len(l) - 1:
 		if l[i][1] != 150 and l[i][2] == 0 and l[i][1] == l[i+1][1] and l[i+1][0] - l[i][0] < TAIL_GAP_MSEC:
 			# print 'checking: NoteOn{0} , NoteOff{1} , next NoteOn{2}'.format(l[i-1],l[i],l[i+1])
-			if l[i+1][0] - TAIL_GAP_MSEC - l[i-1][0] < MIN_DURATION:
-				l[i][0] = l[i-1][0] + MIN_DURATION
+			if l[i+1][0] - TAIL_GAP_MSEC - l[i-1][0] < MIN_NOTE_DUR:
+				l[i][0] = l[i-1][0] + MIN_NOTE_DUR
 			else:
 				l[i][0] = l[i+1][0] - TAIL_GAP_MSEC
 			# print 'changed {0}\n'.format(l[i])
-		elif l[i][1] != 150 and l[i][2] != 0 and l[i][2] != HOLD_DELAY_POWER and l[i+1][0] - l[i][0] > MIN_DURATION:
+		elif l[i][1] != 150 and l[i][2] != 0 and l[i][2] != HOLD_DELAY_POWER and l[i+1][0] - l[i][0] > MIN_NOTE_DUR:
 			# print 'checking to add power hold: {0} next action {1}'.format(l[i],l[i+1])
 			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
 			# print 'added {0}\n'.format(l[i+1])
