@@ -1,17 +1,20 @@
 import argparse
 import re
 
-#TODO: Hold power after each NoteOn (for cooling off)
-#TODO: Each key on piano to tweak:
-#      - multiplier
-#      - offset
-
 #CONSTANTS to tweak
+# TAIL_GAP_MSEC => I forgot
+# MIN_DURATION => I forgot
+# HOLD_DELAY_POWER_START_MSEC => time when solarnoid will start holding
+# HOLD_DELAY_POWER => power when the solarnoid is holding
+# COM_SERIAL => serial number when connecting to Arduino
+# SUSTAIN_NOTE => the note that a sustain will be used 
+
 TAIL_GAP_MSEC = 250
 MIN_DURATION = 140
 HOLD_DELAY_POWER_START_MSEC = 170
 HOLD_DELAY_POWER = 50
 COM_SERIAL = 'COM11'
+SUSTAIN_NOTE = 150
 
 #KEY_SCALE will multiply the value set to the corresponding key
 KEY_SCALE = [0, 
@@ -86,6 +89,8 @@ if(args.input_file):
 	read_file = open(args.input_file, 'r')
 
 	dict_l = []
+	num_of_notes = 0
+	sum_vol = 0
 
 	for line in read_file:
 		NoteOn =  re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1 note: (?P<note>[0-9]+) vol: (?P<val>[0-9]+) dur: (?P<dur>[0-9]+)$',line)
@@ -97,23 +102,25 @@ if(args.input_file):
 			d = match.groupdict()
 			timestamp = int(d['min']) * 60000 + int(d['sec']) * 1000 + int(d['msec'])
 			dict_l.append({'time':timestamp,
-						   'note':int(d['note']) if 'note' in d else int(150),
+						   'note':int(d['note']) if 'note' in d else SUSTAIN_NOTE,
 						   'val':int(d['val']) if 'val' in d else int(0)})
+			if d['action'] == 'NoteOn': 
+				num_of_notes+=1 
+				sum_vol+=int(d['val']) 
 		else:
 			continue
-
-	num_of_notes = 0
-	sum_vol = 0
-	for i, d in enumerate(dict_l):
-		if d['note'] != 150 and d['val'] != 0: 
-			num_of_notes+=1
-			sum_vol+=d['note']
-			print i, '--->', d, num_of_notes, sum_vol
 
 	avg = sum_vol/num_of_notes if args.target_average == None else args.target_average
 	print avg
 
+	#need to check this
 	dict_l.sort(key=lambda x: (x['note'],x['time']))
+
+	for index, cur_d in enumerate(dict_l):
+		if index > 0: 
+			prev_d = dict_l[index-1] 
+			print prev_d,'-->',cur_d
+
 
 
 	read_file = open(args.input_file, 'r')
@@ -138,7 +145,7 @@ if(args.input_file):
 					l.append([time_in_msec,int(match.group('note')),int(0)])
 			elif match.group('action') == 'Sustain':
 				match = re.match(r' [a-zA-Z]+: (?P<val>[0-9]+)',match.group('params'))
-				l.append([time_in_msec,int(150),int(match.group('val'))])
+				l.append([time_in_msec,SUSTAIN_NOTE,int(match.group('val'))])
 	if args.target_average == None:
 		avg_vol = sum_vol/num_of_notes
 	else:
