@@ -1,17 +1,20 @@
 import argparse
 import re
 
-#TODO: Hold power after each NoteOn (for cooling off)
-#TODO: Each key on piano to tweak:
-#      - multiplier
-#      - offset
-
 #CONSTANTS to tweak
+# TAIL_GAP_MSEC => Something to do with notes being played closed to each
+# MIN_NOTE_DUR => min time for a note to be playable
+# HOLD_DELAY_POWER_START_MSEC => time when solarnoid will start holding
+# HOLD_DELAY_POWER => power when the solarnoid is holding
+# COM_SERIAL => serial number when connecting to Arduino
+# SUSTAIN_NOTE => the note that a sustain will be used 
+
 TAIL_GAP_MSEC = 250
-MIN_DURATION = 140
+MIN_NOTE_DUR = 140
 HOLD_DELAY_POWER_START_MSEC = 170
 HOLD_DELAY_POWER = 50
 COM_SERIAL = 'COM11'
+SUSTAIN_NOTE = 150
 
 #KEY_SCALE will multiply the value set to the corresponding key
 KEY_SCALE = [0, 
@@ -64,16 +67,15 @@ def writeHeader(write_file):
 	write_file.write('time.sleep(1)\n\n')
 	write_file.write('#<time,key,power>\n')
 
-def writeKey(write_file,time,key,pwr,hold=False):
-	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(time,key,pwr))
-	if(hold==True and pwr > 3):
+def writeKey(write_file,time,key,power,hold=False):
+	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(time,key,power))
+	if(hold==True and power > 3):
 		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
 	write_file.write('ser.readline()\n')
 
 def adjust_vol(vol,note,avg):
 	return int((vol-avg) * KEY_SCALE[note] + KEY_OFFSET[note] + avg)
 
-#TODO: add an argument that can take "test" to make a testing .py file for arduino
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] [delay_time] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
@@ -81,80 +83,77 @@ parser.add_argument('--target-average', type=int, help='--target-average=[target
 args = parser.parse_args()
 #print(args)
 
-if(args.input_file) :
+if(args.input_file):
 
 	read_file = open(args.input_file, 'r')
+
+	notes = []
 	num_of_notes = 0
 	sum_vol = 0
-	l = []
 
-	#match and add into list l[timestamp,note,vol]
 	for line in read_file:
-		match = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1(?P<params>( [a-zA-Z]+: [0-9]+)+)', line)
+		NoteOn =  re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1 note: (?P<note>[0-9]+) vol: (?P<val>[0-9]+) dur: (?P<dur>[0-9]+)$',line)
+		NoteOff = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1 note: (?P<note>[0-9]+)$',line)
+		Sustain = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: 1 value: (?P<val>[0-9]+)$',line)
+
+		match = sorted([NoteOn,NoteOff,Sustain],reverse=True)[0]
 		if match:
-			time_in_msec = int(match.group('min')) * 60000 + int(match.group('sec')) * 1000 + int(match.group('msec'))
-			if match.group('action') == 'NoteOn':
-				match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+) [a-zA-Z]+: (?P<vol>[0-9]+) [a-zA-Z]+: (?P<dur>[0-9]+)',match.group('params'))
-				if match:
-					num_of_notes = num_of_notes + 1
-					sum_vol = sum_vol + int(match.group('vol'))
-					l.append([time_in_msec,int(match.group('note')),int(int(match.group('vol')))])
-			elif match.group('action') == 'NoteOff':
-				match = re.match(r' [a-zA-Z]+: (?P<note>[0-9]+)',match.group('params'))
-				if match:
-					l.append([time_in_msec,int(match.group('note')),int(0)])
-			elif match.group('action') == 'Sustain':
-				match = re.match(r' [a-zA-Z]+: (?P<val>[0-9]+)',match.group('params'))
-				l.append([time_in_msec,int(150),int(match.group('val'))])
-	
-	if args.target_average == None:
-		avg_vol = sum_vol/num_of_notes
-	else:
-		avg_vol = args.target_average
-	print 'num of notes {0} with sum volume {1} and average vol {2}'.format(num_of_notes,sum_vol,avg_vol)
+			d = match.groupdict()
+			timestamp = int(d['min']) * 60000 + int(d['sec']) * 1000 + int(d['msec'])
+			notes.append({'time':timestamp,
+						  'note':int(d['note']) if 'note' in d else SUSTAIN_NOTE,
+						  'val':int(d['val']) if 'val' in d else int(0),
+						  'action':d['action']})
+			if d['action'] == 'NoteOn': 
+				num_of_notes+=1 
+				sum_vol+=int(d['val']) 
+		else:
+			continue
 
-	#sort the list according to note and then timestamp
-	l.sort(key=lambda x: (x[1],x[0]))
+	avg_vol = sum_vol/num_of_notes if args.target_average == None else args.target_average
 
-	#l[[timestamp,note,vol],[timestamp,note,vol], ...]
-	#cut tail of note when it is immediately played again by 50ms
-	#if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50) then timestamp(NoteOff) - 50ms
-	#also change vol according to average vol
-	i = 0
+	notes=filter(lambda x:x['action']=='NoteOn' or x['action']=='NoteOff' or x['action']=='Sustain',notes)
 
-	while i < len(l) - 1:
-		if l[i][1] != 150 and l[i][2] == 0 and l[i][1] == l[i+1][1] and l[i+1][0] - l[i][0] < TAIL_GAP_MSEC:
-			# print 'checking: NoteOn{0} , NoteOff{1} , next NoteOn{2}'.format(l[i-1],l[i],l[i+1])
-			if l[i+1][0] - TAIL_GAP_MSEC - l[i-1][0] < MIN_DURATION:
-				l[i][0] = l[i-1][0] + MIN_DURATION
-			else:
-				l[i][0] = l[i+1][0] - TAIL_GAP_MSEC
-			# print 'changed {0}\n'.format(l[i])
-		elif l[i][1] != 150 and l[i][2] != 0 and l[i][2] != HOLD_DELAY_POWER and l[i+1][0] - l[i][0] > MIN_DURATION:
-			# print 'checking to add power hold: {0} next action {1}'.format(l[i],l[i+1])
-			l.insert(i+1,[l[i][0] + HOLD_DELAY_POWER_START_MSEC,l[i][1],HOLD_DELAY_POWER])
-			# print 'added {0}\n'.format(l[i+1])
-		if l[i][2] > HOLD_DELAY_POWER and l[i][1] != 150:
-			l[i][2] = adjust_vol(vol=l[i][2],note=l[i][1],avg=avg_vol)
-		i+=1
+	notes.sort(key=lambda x: (x['note'],x['time']))
+
+	# 1. cut the tail(end) of a note when it's immediately played again in 50ms 
+	#	 if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50ms) then timestamp(NoteOff) - 50ms
+	# 2. adds hold note 
+	# 3. adjust volume
+	print 'TAIL_GAP_MSEC: {0}, MIN_NOTE_DUR: {1}'.format(TAIL_GAP_MSEC,MIN_NOTE_DUR)
+	for index, note in enumerate(notes):
+		if note['action'] == 'NoteOn' and note['val']!=HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
+			#add hold note if needed
+			if notes[index+1]['time'] - note['time'] > MIN_NOTE_DUR:
+				notes.insert(index+1,{'time': note['time'] + HOLD_DELAY_POWER_START_MSEC,
+									  'note': note['note'],
+									  'val': HOLD_DELAY_POWER,
+									  'action': 'NoteOn'})
+		elif note['action'] == 'NoteOff' and note['note']==notes[index+1]['note']:
+			#cut tail if needed
+			noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
+			if abs(noteOff['time'] - nextNoteOn['time']) < TAIL_GAP_MSEC:
+				if nextNoteOn['time'] - TAIL_GAP_MSEC - noteOn['time'] < MIN_NOTE_DUR: 
+					noteOff['time'] = noteOn['time'] + MIN_NOTE_DUR
+				else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC
+		
+		if note['action'] == 'NoteOn' and note['val'] != HOLD_DELAY_POWER:
+			note['val'] = adjust_vol(vol=note['val'],note=note['note'],avg=avg_vol)
 
 
-	#sort according to timestamp and change to delta t
-	l.sort()
-	i = len(l) - 1
-	while i > 1:
-		l[i][0] = l[i][0] - l[i-1][0]
-		i-=1
-	#quickfix to make sure the first two notes are with zero t
-	l[0][0] = 0
-	l[1][0] = 0
+	#update timestamp to delta t
+	notes.sort(key=lambda x: (x['time'],x['note']))
+	for index, note in reversed(list(enumerate(notes))):
+		note['time'] = note['time'] - notes[index-1]['time']
+	notes[0]['time'] = 0
 
 	#write files
-	write_file = open(args.input_file[:len(args.input_file)-4] + '.py', 'w')
+	write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
 	writeHeader(write_file)
-	for i in l:
-		writeKey(write_file,i[0],i[1],i[2])
+	for note in notes:
+		writeKey(write_file,time=note['time'],key=note['note'],power=note['val'])
 	print '\'' + args.input_file[:len(args.input_file)-4] + '.py\' has been created'
+
 elif (args.test):
 	#TODO: to apply multiplier and offset
 	#generates a 'test.py' to play the piano 
