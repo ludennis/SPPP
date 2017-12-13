@@ -67,9 +67,9 @@ def writeHeader(write_file):
 	write_file.write('time.sleep(1)\n\n')
 	write_file.write('#<time,key,power>\n')
 
-def writeKey(write_file,time,key,pwr,hold=False):
-	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(time,key,pwr))
-	if(hold==True and pwr > 3):
+def writeKey(write_file,time,key,power,hold=False):
+	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(time,key,power))
+	if(hold==True and power > 3):
 		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
 	write_file.write('ser.readline()\n')
 
@@ -112,8 +112,10 @@ if(args.input_file):
 			continue
 
 	avg_vol = sum_vol/num_of_notes if args.target_average == None else args.target_average
+	
 
-	#need to check this
+	notes=filter(lambda x:x['action']=='NoteOn' or x['action']=='NoteOff' or x['action']=='Sustain',notes)
+
 	notes.sort(key=lambda x: (x['note'],x['time']))
 
 	# 1. cut the tail(end) of a note when it's immediately played again in 50ms 
@@ -121,44 +123,46 @@ if(args.input_file):
 	# 2. adds hold note 
 	# 3. adjust volume
 
-	print 'TAIL_GAP_MSEC: {0}, MIN_NOTE_DUR: {1}'.format(TAIL_GAP_MSEC,MIN_NOTE_DUR)
-	for index, note in enumerate(notes[1:]):
-		if note['action'] == 'NoteOff' and notes[index+1]['action'] == 'NoteOn':
-			noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
-			if abs(noteOff['time'] - nextNoteOn['time']) < TAIL_GAP_MSEC:
-				if nextNoteOn['time'] - TAIL_GAP_MSEC - noteOn['time'] < MIN_NOTE_DUR: 
-					noteOff['time'] = noteOn['time'] + MIN_NOTE_DUR
-				else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC
-		elif note['action'] == 'NoteOn':
+	#print 'TAIL_GAP_MSEC: {0}, MIN_NOTE_DUR: {1}'.format(TAIL_GAP_MSEC,MIN_NOTE_DUR)
+	for index, note in enumerate(notes):
+		print index, '-->', note
+		if note['action'] == 'NoteOn' and note['val']!=HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
+			#add hold note if needed
 			if notes[index+1]['time'] - note['time'] > MIN_NOTE_DUR:
 				notes.insert(index+1,{'time': note['time'] + HOLD_DELAY_POWER_START_MSEC,
 									  'note': note['note'],
 									  'val': HOLD_DELAY_POWER,
 									  'action': 'NoteOn'})
+				print 'added {}-->{}'.format(index+1, notes[index+1])
+		elif note['action'] == 'NoteOff' and note['note']==notes[index+1]['note']:
+			#cut tail if needed
+			noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
+			if abs(noteOff['time'] - nextNoteOn['time']) < TAIL_GAP_MSEC:
+				if nextNoteOn['time'] - TAIL_GAP_MSEC - noteOn['time'] < MIN_NOTE_DUR: 
+					noteOff['time'] = noteOn['time'] + MIN_NOTE_DUR
+				else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC
+		
 		if note['action'] == 'NoteOn' and note['val'] != HOLD_DELAY_POWER:
 			note['val'] = adjust_vol(vol=note['val'],note=note['note'],avg=avg_vol)
 
-	notes.sort(key=lambda x: x['time'])
-	
-	#TODO find elegant pythonic way to updat timestamp to delta t
-	# (cur['time']=next['time']-cur['time']) for cur,next in zip(notes[:-1],notes[1:])
 
-	#sort according to timestamp and change to delta t
-	# l.sort()
-	# i = len(l) - 1
-	# while i > 1:
-	# 	l[i][0] = l[i][0] - l[i-1][0]
-	# 	i-=1
-	# #quickfix to make sure the first two notes are with zero t
-	# l[0][0] = 0
-	# l[1][0] = 0
+	#update timestamp to delta t
+	notes.sort(key=lambda x: (x['time'],x['note']))
+	for index, note in reversed(list(enumerate(notes))):
+		# print index, ',', note
+		note['time'] = note['time'] - notes[index-1]['time']
+		# print index, ',', note
+	notes[0]['time'] = 0
 
-	# #write files
-	# write_file = open(args.input_file[:len(args.input_file)-4] + '.py', 'w')
-	# writeHeader(write_file)
-	# for i in l:
-	# 	writeKey(write_file,i[0],i[1],i[2])
-	# print '\'' + args.input_file[:len(args.input_file)-4] + '.py\' has been created'
+
+
+	#write files
+	write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
+	writeHeader(write_file)
+	for note in notes:
+		writeKey(write_file,time=note['time'],key=note['note'],power=note['val'])
+	print '\'' + args.input_file[:len(args.input_file)-4] + '.py\' has been created'
+
 elif (args.test):
 	#TODO: to apply multiplier and offset
 	#generates a 'test.py' to play the piano 
