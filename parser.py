@@ -73,7 +73,6 @@ def writeKey(write_file,time,key,power,hold=False):
 		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
 	write_file.write('ser.readline()\n')
 
-#adjust volume according to tmax & tmin
 def adjust_note_vol(note,avg):
 	note['val'] = int((note['val']-avg) * KEY_SCALE[note['note']] + KEY_OFFSET[note['note']] + avg)
 	return note
@@ -88,7 +87,6 @@ parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='th
 parser.add_argument('--tmax',type=int,default=180,help='--tmax=[target_max_power]')
 parser.add_argument('--tmin',type=int,default=105,help='--tmin=[target_min_power]')
 args = parser.parse_args()
-#print(args)
 
 if(args.input_file):
 
@@ -135,45 +133,36 @@ if(args.input_file):
 	#	4. bring them back with the desired tmax and tmin (by adding orig_tmax - tmax or something like that)
 	# 	5. apply preset profile of notes after this
 
-	print 'tmax {}, tmin {}'.format(args.tmax, args.tmin)
 	tmax, tmin = (args.tmax-args.tmin)/2.0, (args.tmin-args.tmax)/2.0
 	for note in notes:
 		if note['action']=='NoteOn': note['val'] -= avg_vol
-	print 'tmax {}, tmin {}, avg_vol {}'.format(tmax, tmin, avg_vol)
-
 
 	notes.sort(key=lambda x: (x['action'],x['val']))
 
 	ten_percent = num_of_notes / 10
 	low_multiplier, high_multiplier = 0.0, 0.0
-	print 'num_of_notes {}, ten_percent {}'.format(num_of_notes, ten_percent)
 	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn' and x['val'] < 0,notes)):
-		# print 'before change', note
 		if index<ten_percent: note['val'] = tmin;
 		elif index==ten_percent: 
 			low_multiplier = tmin/note['val']
-			# print 'low_multiplier', low_multiplier
 		else: note['val'] = note['val'] * low_multiplier
-		# print 'after change', note
 
 	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn' and x['val'] >= 0, reversed(notes))):
-		# print 'before change', note
 		if index<ten_percent: note['val'] = tmax;
 		elif index==ten_percent: 
 			high_multiplier=tmax/note['val']
-			# print 'high_multiplier', high_multiplier
 		else: note['val'] = note['val'] * high_multiplier
-		# print 'after change', note
 
 	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn', notes)):
 		note['val'] = int(note['val'] + args.tmax - tmax)
+		note=adjust_note_vol(note=note,avg=avg_vol)
 
 
 	# 1. cut the tail(end) of a note when it's immediately played again in 50ms 
 	#	 if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50ms) then timestamp(NoteOff) - 50ms
 	# 2. adds hold note 
 	notes.sort(key=lambda x: (x['note'],x['time']))
-	for index, note in enumerate(notes):
+	for index, note in enumerate(notes[:-1]):
 		if note['action'] == 'NoteOn' and note['val']!=HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
 			if notes[index+1]['time'] - note['time'] > MIN_NOTE_DUR:
 				notes.insert(index+1,{'time': note['time'] + HOLD_DELAY_POWER_START_MSEC,
@@ -186,11 +175,6 @@ if(args.input_file):
 				if nextNoteOn['time'] - TAIL_GAP_MSEC - noteOn['time'] < MIN_NOTE_DUR: 
 					noteOff['time'] = noteOn['time'] + MIN_NOTE_DUR
 				else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC	
-		# if note['action'] == 'NoteOn' and note['val'] != HOLD_DELAY_POWER:
-		# 	note = adjust_note_vol(note=note,avg=avg_vol)
-
-
-
 
 	#update timestamp to delta t
 	notes.sort(key=lambda x: (x['time'],x['note']))
@@ -203,7 +187,7 @@ if(args.input_file):
 	writeHeader(write_file)
 	for note in notes:
 		writeKey(write_file,time=note['time'],key=note['note'],power=note['val'])
-	print '\'' + args.input_file[:len(args.input_file)-4] + '.py\' has been created'
+	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
 elif (args.test):
 	#TODO: to apply multiplier and offset
