@@ -7,15 +7,12 @@
 # HOLD_DELAY_POWER => power when the solarnoid is holding
 # COM_SERIAL => serial number when connecting to Arduino
 # SUSTAIN_NOTE => the note that a sustain will be used 
-
-
 TAIL_GAP_MSEC = 250
 MIN_NOTE_DUR = 140
 HOLD_DELAY_POWER_START_MSEC = 170
 HOLD_DELAY_POWER = 3
 COM_SERIAL = 'COM11'
 SUSTAIN_NOTE = 150
-
 
 KEY_SCALE = [0, 
 			 0,0,0,0,0,0,0,0,0,0,     #ignore

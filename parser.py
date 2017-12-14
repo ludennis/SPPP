@@ -2,7 +2,6 @@ import argparse
 import re
 import const
 
-
 def writeHeader(write_file):
 	write_file.write('import serial\n')
 	write_file.write('import time\n')
