@@ -12,7 +12,7 @@ import re
 TAIL_GAP_MSEC = 250
 MIN_NOTE_DUR = 140
 HOLD_DELAY_POWER_START_MSEC = 170
-HOLD_DELAY_POWER = 50
+HOLD_DELAY_POWER = 3
 COM_SERIAL = 'COM11'
 SUSTAIN_NOTE = 150
 
@@ -162,19 +162,20 @@ if(args.input_file):
 	#	 if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50ms) then timestamp(NoteOff) - 50ms
 	# 2. adds hold note 
 	notes.sort(key=lambda x: (x['note'],x['time']))
-	for index, note in enumerate(notes[:-1]):
-		if note['action'] == 'NoteOn' and note['val']!=HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
-			if notes[index+1]['time'] - note['time'] > MIN_NOTE_DUR:
-				notes.insert(index+1,{'time': note['time'] + HOLD_DELAY_POWER_START_MSEC,
-									  'note': note['note'],
-									  'val': HOLD_DELAY_POWER,
-									  'action': 'NoteOn'})
-		elif note['action'] == 'NoteOff' and note['note']==notes[index+1]['note']:
-			noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
-			if abs(noteOff['time'] - nextNoteOn['time']) < TAIL_GAP_MSEC:
-				if nextNoteOn['time'] - TAIL_GAP_MSEC - noteOn['time'] < MIN_NOTE_DUR: 
-					noteOff['time'] = noteOn['time'] + MIN_NOTE_DUR
-				else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC	
+	for index, note in enumerate(notes):
+		if index<len(notes)-1:
+			if note['action'] == 'NoteOn' and note['val']!=HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
+				if notes[index+1]['time'] - note['time'] > MIN_NOTE_DUR:
+					notes.insert(index+1,{'time': note['time'] + HOLD_DELAY_POWER_START_MSEC,
+										  'note': note['note'],
+										  'val': HOLD_DELAY_POWER,
+										  'action': 'NoteOn'})
+			elif note['action'] == 'NoteOff' and note['note']==notes[index+1]['note']:
+				noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
+				if abs(noteOff['time'] - nextNoteOn['time']) < TAIL_GAP_MSEC:
+					if nextNoteOn['time'] - TAIL_GAP_MSEC - noteOn['time'] < MIN_NOTE_DUR: 
+						noteOff['time'] = noteOn['time'] + MIN_NOTE_DUR
+					else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC	
 
 	#update timestamp to delta t
 	notes.sort(key=lambda x: (x['time'],x['note']))
