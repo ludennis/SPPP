@@ -73,8 +73,14 @@ def writeKey(write_file,time,key,power,hold=False):
 		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
 	write_file.write('ser.readline()\n')
 
-def adjust_vol(vol,note,avg):
-	return int((vol-avg) * KEY_SCALE[note] + KEY_OFFSET[note] + avg)
+#adjust volume according to preset profile of each key
+def adjust_note_vol(note,avg):
+	note['val'] = int((note['val']-avg) * KEY_SCALE[note['note']] + KEY_OFFSET[note['note']] + avg)
+	return note
+
+def compress_note(note,tmax,tmin):
+	note['val'] = tmax if note['val'] > tmax else tmin
+	return note
 
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] [delay_time] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
@@ -121,9 +127,14 @@ if(args.input_file):
 	#	 if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50ms) then timestamp(NoteOff) - 50ms
 	# 2. adds hold note 
 	# 3. adjust volume
+	# 4. compress peaky notes according to tmax and tmin (notes with volume too high or too low)
 	print 'TAIL_GAP_MSEC: {0}, MIN_NOTE_DUR: {1}'.format(TAIL_GAP_MSEC,MIN_NOTE_DUR)
 	for index, note in enumerate(notes):
 		if note['action'] == 'NoteOn' and note['val']!=HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
+			#compress note if needed
+			if not (args.tmin <= note['val'] <= args.tmax):
+				print 'compressing note {} within {} - {}'.format(note,args.tmin,args.tmax)
+				note = compress_note(note=note,tmax=args.tmax,tmin=args.tmin)
 			#add hold note if needed
 			if notes[index+1]['time'] - note['time'] > MIN_NOTE_DUR:
 				notes.insert(index+1,{'time': note['time'] + HOLD_DELAY_POWER_START_MSEC,
@@ -139,7 +150,7 @@ if(args.input_file):
 				else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC
 		
 		if note['action'] == 'NoteOn' and note['val'] != HOLD_DELAY_POWER:
-			note['val'] = adjust_vol(vol=note['val'],note=note['note'],avg=avg_vol)
+			note = adjust_note_vol(note=note,avg=avg_vol)
 
 
 	#update timestamp to delta t
