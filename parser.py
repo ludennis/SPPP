@@ -79,7 +79,8 @@ def adjust_vol(vol,note,avg):
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] [delay_time] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
-parser.add_argument('--target-average', type=int, help='--target-average=[target_average_power]')
+parser.add_argument('--tmax', type=int, help='--tmax=[target_max_power]')
+parser.add_argument('--tmin', type=int, help='--tmin=[target_min_power]')
 args = parser.parse_args()
 #print(args)
 
@@ -110,7 +111,7 @@ if(args.input_file):
 		else:
 			continue
 
-	avg_vol = sum_vol/num_of_notes if args.target_average == None else args.target_average
+	avg_vol = sum_vol/num_of_notes
 
 	notes=filter(lambda x:x['action']=='NoteOn' or x['action']=='NoteOff' or x['action']=='Sustain',notes)
 
