@@ -17,3 +17,4 @@ Commands for 'parser.py'
 TODO's
 1. to have desired max, min, and average power level
 2. add version
+3. add normalization (compress notes too high or too low, then normalize)
