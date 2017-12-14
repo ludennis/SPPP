@@ -73,7 +73,7 @@ def writeKey(write_file,time,key,power,hold=False):
 		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
 	write_file.write('ser.readline()\n')
 
-#adjust volume according to preset profile of each key
+#adjust volume according to tmax & tmin
 def adjust_note_vol(note,avg):
 	note['val'] = int((note['val']-avg) * KEY_SCALE[note['note']] + KEY_OFFSET[note['note']] + avg)
 	return note
@@ -85,8 +85,8 @@ def compress_note(note,tmax,tmin):
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] [delay_time] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
-parser.add_argument('--tmax', type=int, help='--tmax=[target_max_power]')
-parser.add_argument('--tmin', type=int, help='--tmin=[target_min_power]')
+parser.add_argument('--tmax',type=int,default=180,help='--tmax=[target_max_power]')
+parser.add_argument('--tmin',type=int,default=105,help='--tmin=[target_min_power]')
 args = parser.parse_args()
 #print(args)
 
@@ -118,39 +118,78 @@ if(args.input_file):
 			continue
 
 	avg_vol = sum_vol/num_of_notes
-
 	notes=filter(lambda x:x['action']=='NoteOn' or x['action']=='NoteOff' or x['action']=='Sustain',notes)
 
-	notes.sort(key=lambda x: (x['note'],x['time']))
+	#Normalize all notes:
+	#	1. move tmax,tmin,notes,avg so that the avg is 0
+	#		a. tmax = tmax - tmin - (tmax-tmin) / 2 = tmax - tmin - tmax/2 + tmin/2 = tmax/2 - tmin/2 = (tmax-tmin)/2
+	#		b. tmin = tmin - tmin - (tmax-tmin) / 2 = tmin/2 - tmax/2 = (tmin-tmax)/2
+	#		c. note = note - avg
+	#	2. squeeze all notes so that 80% remain inside [tmin,tmax]
+	#		a. sort all NoteOn according to value and the 10% highest and 10% lowest
+	#		b. calculate the multiplier for 10% high to reach tmax and 10% min to reach tmin
+	#			- for note['val'] < 0 ====> note['val'] = tmin/notes[low10%]
+	#			- for note['val'] > 0 ====> note['val'] = tmax/notes[high10%] 
+	#		c. multiple all notes above 0 with (+)multiplier and all notes under zero with (-)multiplier
+	#	3. compress all peaky notes to tmax or tmin
+	#	4. bring them back with the desired tmax and tmin (by adding orig_tmax - tmax or something like that)
+	# 	5. apply preset profile of notes after this
+
+	print 'tmax {}, tmin {}'.format(args.tmax, args.tmin)
+	tmax, tmin = (args.tmax-args.tmin)/2.0, (args.tmin-args.tmax)/2.0
+	for note in notes:
+		if note['action']=='NoteOn': note['val'] -= avg_vol
+	print 'tmax {}, tmin {}, avg_vol {}'.format(tmax, tmin, avg_vol)
+
+
+	notes.sort(key=lambda x: (x['action'],x['val']))
+
+	ten_percent = num_of_notes / 10
+	low_multiplier, high_multiplier = 0.0, 0.0
+	print 'num_of_notes {}, ten_percent {}'.format(num_of_notes, ten_percent)
+	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn' and x['val'] < 0,notes)):
+		# print 'before change', note
+		if index<ten_percent: note['val'] = tmin;
+		elif index==ten_percent: 
+			low_multiplier = tmin/note['val']
+			# print 'low_multiplier', low_multiplier
+		else: note['val'] = note['val'] * low_multiplier
+		# print 'after change', note
+
+	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn' and x['val'] >= 0, reversed(notes))):
+		# print 'before change', note
+		if index<ten_percent: note['val'] = tmax;
+		elif index==ten_percent: 
+			high_multiplier=tmax/note['val']
+			# print 'high_multiplier', high_multiplier
+		else: note['val'] = note['val'] * high_multiplier
+		# print 'after change', note
+
+	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn', notes)):
+		note['val'] = int(note['val'] + args.tmax - tmax)
+
 
 	# 1. cut the tail(end) of a note when it's immediately played again in 50ms 
 	#	 if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50ms) then timestamp(NoteOff) - 50ms
 	# 2. adds hold note 
-	# 3. adjust volume
-	# 4. compress peaky notes according to tmax and tmin (notes with volume too high or too low)
-	print 'TAIL_GAP_MSEC: {0}, MIN_NOTE_DUR: {1}'.format(TAIL_GAP_MSEC,MIN_NOTE_DUR)
+	notes.sort(key=lambda x: (x['note'],x['time']))
 	for index, note in enumerate(notes):
 		if note['action'] == 'NoteOn' and note['val']!=HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
-			#compress note if needed
-			if not (args.tmin <= note['val'] <= args.tmax):
-				print 'compressing note {} within {} - {}'.format(note,args.tmin,args.tmax)
-				note = compress_note(note=note,tmax=args.tmax,tmin=args.tmin)
-			#add hold note if needed
 			if notes[index+1]['time'] - note['time'] > MIN_NOTE_DUR:
 				notes.insert(index+1,{'time': note['time'] + HOLD_DELAY_POWER_START_MSEC,
 									  'note': note['note'],
 									  'val': HOLD_DELAY_POWER,
 									  'action': 'NoteOn'})
 		elif note['action'] == 'NoteOff' and note['note']==notes[index+1]['note']:
-			#cut tail if needed
 			noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
 			if abs(noteOff['time'] - nextNoteOn['time']) < TAIL_GAP_MSEC:
 				if nextNoteOn['time'] - TAIL_GAP_MSEC - noteOn['time'] < MIN_NOTE_DUR: 
 					noteOff['time'] = noteOn['time'] + MIN_NOTE_DUR
-				else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC
-		
-		if note['action'] == 'NoteOn' and note['val'] != HOLD_DELAY_POWER:
-			note = adjust_note_vol(note=note,avg=avg_vol)
+				else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC	
+		# if note['action'] == 'NoteOn' and note['val'] != HOLD_DELAY_POWER:
+		# 	note = adjust_note_vol(note=note,avg=avg_vol)
+
+
 
 
 	#update timestamp to delta t
