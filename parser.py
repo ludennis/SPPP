@@ -1,80 +1,23 @@
 import argparse
 import re
-
-#CONSTANTS to tweak
-# TAIL_GAP_MSEC => Something to do with notes being played closed to each
-# MIN_NOTE_DUR => min time for a note to be playable
-# HOLD_DELAY_POWER_START_MSEC => time when solarnoid will start holding
-# HOLD_DELAY_POWER => power when the solarnoid is holding
-# COM_SERIAL => serial number when connecting to Arduino
-# SUSTAIN_NOTE => the note that a sustain will be used 
-
-TAIL_GAP_MSEC = 250
-MIN_NOTE_DUR = 140
-HOLD_DELAY_POWER_START_MSEC = 170
-HOLD_DELAY_POWER = 3
-COM_SERIAL = 'COM11'
-SUSTAIN_NOTE = 150
-
-#KEY_SCALE will multiply the value set to the corresponding key
-KEY_SCALE = [0, 
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,					  #ignore
-			 
-			 
-			 1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00, #Octave 1 keys 24-35
-			 1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00, #Octave 2 keys 36-47
-			 1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00, #Octave 3 keys 48-59
-			 1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00, #Octave 4 keys 60-71
-			 1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00, #Octave 5 keys 72-83
-			 1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00, #Octave 6 keys 84-96
-			 
-			 
-			 0,0,0,0,         #ignore, this is up to 100
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,0,0,0,0,0,0,0]     #ignore this is up to 150
-
-KEY_OFFSET = [0, 
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,				      #ignore
-			 
-			 
-			   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, #Octave 1 keys 24-35
-			   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, #Octave 2 keys 36-47
-			   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, #Octave 3 keys 48-59
-			   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, #Octave 4 keys 60-71
-			   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, #Octave 5 keys 72-83
-			   2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, #Octave 6 keys 84-96
-			 
-			 
-			 0,0,0,0,                 #ignore, this is up to 100
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,0,0,0,0,0,0,0,     #ignore
-			 0,0,0,0,0,0,0,0,0,0]     #ignore this is up to 150
+import const
 
 
 def writeHeader(write_file):
 	write_file.write('import serial\n')
 	write_file.write('import time\n')
-	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(COM_SERIAL))
+	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(const.COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
 	write_file.write('#<time,key,power>\n')
 
 def writeKey(write_file,time,key,power,hold=False):
 	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(time,key,power))
 	if(hold==True and power > 3):
-		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(HOLD_DELAY_POWER_START_MSEC,key,HOLD_DELAY_POWER))
+		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(const.HOLD_DELAY_POWER_START_MSEC,key,const.HOLD_DELAY_POWER))
 	write_file.write('ser.readline()\n')
 
 def adjust_note_vol(note,avg):
-	note['val'] = int((note['val']-avg) * KEY_SCALE[note['note']] + KEY_OFFSET[note['note']] + avg)
+	note['val'] = int((note['val']-avg) * const.KEY_SCALE[note['note']] + const.KEY_OFFSET[note['note']] + avg)
 	return note
 
 def compress_note(note,tmax,tmin):
@@ -164,18 +107,18 @@ if(args.input_file):
 	notes.sort(key=lambda x: (x['note'],x['time']))
 	for index, note in enumerate(notes):
 		if index<len(notes)-1:
-			if note['action'] == 'NoteOn' and note['val']!=HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
-				if notes[index+1]['time'] - note['time'] > MIN_NOTE_DUR:
-					notes.insert(index+1,{'time': note['time'] + HOLD_DELAY_POWER_START_MSEC,
+			if note['action'] == 'NoteOn' and note['val']!=const.HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
+				if notes[index+1]['time'] - note['time'] > const.MIN_NOTE_DUR:
+					notes.insert(index+1,{'time': note['time'] + const.HOLD_DELAY_POWER_START_MSEC,
 										  'note': note['note'],
-										  'val': HOLD_DELAY_POWER,
+										  'val': const.HOLD_DELAY_POWER,
 										  'action': 'NoteOn'})
 			elif note['action'] == 'NoteOff' and note['note']==notes[index+1]['note']:
 				noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
-				if abs(noteOff['time'] - nextNoteOn['time']) < TAIL_GAP_MSEC:
-					if nextNoteOn['time'] - TAIL_GAP_MSEC - noteOn['time'] < MIN_NOTE_DUR: 
-						noteOff['time'] = noteOn['time'] + MIN_NOTE_DUR
-					else: noteOff['time'] = nextNoteOn['time'] - TAIL_GAP_MSEC	
+				if abs(noteOff['time'] - nextNoteOn['time']) < const.TAIL_GAP_MSEC:
+					if nextNoteOn['time'] - const.TAIL_GAP_MSEC - noteOn['time'] < const.MIN_NOTE_DUR: 
+						noteOff['time'] = noteOn['time'] + const.MIN_NOTE_DUR
+					else: noteOff['time'] = nextNoteOn['time'] - const.TAIL_GAP_MSEC	
 
 	#update timestamp to delta t
 	notes.sort(key=lambda x: (x['time'],x['note']))
@@ -206,8 +149,8 @@ elif (args.test):
 		cur_key = start_key
 		cur_pwr = min_pwr
 
-		if(delay_time<HOLD_DELAY_POWER_START_MSEC):
-			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,HOLD_DELAY_POWER_START_MSEC)
+		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
 
 		while cur_key <= end_key:
 			cur_pwr = min_pwr
@@ -233,8 +176,8 @@ elif (args.test):
 		delay_time=int(args.test[3])
 		cur_key = start_key
 
-		if(delay_time<HOLD_DELAY_POWER_START_MSEC):
-			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,HOLD_DELAY_POWER_START_MSEC)
+		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
 
 		while cur_key <= end_key:
 			writeKey(write_file=write_file,time=0,key=cur_key,vol=adjust_vol(pwr,cur_key,0 if args.target_average == None else args.target_average),hold=True)

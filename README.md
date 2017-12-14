@@ -18,3 +18,5 @@ Commands for 'parser.py'
 TODO's
 1. add version
 2. change all 'key's into 'note's
+3. put all constants in another file
+4. make tmax and tmin into a constants
