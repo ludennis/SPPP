@@ -97,7 +97,6 @@ if(args.input_file):
 		note['val'] = int(note['val'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
-
 	# 1. cut the tail(end) of a note when it's immediately played again in 50ms 
 	#	 if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50ms) then timestamp(NoteOff) - 50ms
 	# 2. adds hold note 
