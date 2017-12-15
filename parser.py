@@ -2,21 +2,21 @@ import argparse
 import re
 import const
 
-def writeHeader(write_file):
+def write_header(write_file):
 	write_file.write('import serial\n')
 	write_file.write('import time\n')
 	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(const.COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
-	write_file.write('#<time,key,power>\n')
+	write_file.write('#<time,note,power>\n')
 
-def writeKey(write_file,time,key,power,hold=False):
-	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(time,key,power))
+def write_note(write_file,time,note,power,hold=False):
+	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(time,note,power))
 	if(hold==True and power > 3):
-		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(const.HOLD_DELAY_POWER_START_MSEC,key,const.HOLD_DELAY_POWER))
+		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(const.HOLD_DELAY_POWER_START_MSEC,note,const.HOLD_DELAY_POWER))
 	write_file.write('ser.readline()\n')
 
 def adjust_note_vol(note,avg):
-	note['val'] = int((note['val']-avg) * const.KEY_SCALE[note['note']] + const.KEY_OFFSET[note['note']] + avg)
+	note['val'] = int((note['val']-avg) * const.NOTE_SCALE[note['note']] + const.NOTE_OFFSET[note['note']] + avg)
 	return note
 
 def compress_note(note,tmax,tmin):
@@ -24,7 +24,7 @@ def compress_note(note,tmax,tmin):
 	return note
 
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
-parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] [delay_time] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
+parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [pwr] [delay_time] or -test [start_note] [end_note] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
 args = parser.parse_args()
 
@@ -125,9 +125,9 @@ if(args.input_file):
 
 	#write files
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
-	writeHeader(write_file)
+	write_header(write_file)
 	for note in notes:
-		writeKey(write_file,time=note['time'],key=note['note'],power=note['val'])
+		write_note(write_file,time=note['time'],note=note['note'],power=note['val'])
 	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
 elif (args.test):
@@ -135,56 +135,56 @@ elif (args.test):
 	#generates a 'test.py' to play the piano 
 	if len(args.test) == 6:
 		write_file = open('test.py', 'w')
-		writeHeader(write_file)
+		write_header(write_file)
 
-		start_key=int(args.test[0])
-		end_key=int(args.test[1])
+		start_note=int(args.test[0])
+		end_note=int(args.test[1])
 		min_pwr=int(args.test[2])
 		max_pwr=int(args.test[3])
 		inc_pwr=int(args.test[4])
 		delay_time=int(args.test[5])
-		cur_key = start_key
+		cur_note = start_note
 		cur_pwr = min_pwr
 
 		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
 
-		while cur_key <= end_key:
+		while cur_note <= end_note:
 			cur_pwr = min_pwr
 			while cur_pwr <= max_pwr:
-				writeKey(write_file=write_file,time=0,key=cur_key,vol=adjust_vol(cur_pwr,cur_key,0 if args.target_average==None else args.target_average))
-				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_key,adjust_vol(cur_pwr,cur_key,0)))
-				writeKey(delay_time,cur_key,pwr=0)
+				write_note(write_file=write_file,time=0,note=cur_note,vol=adjust_vol(cur_pwr,cur_note,0 if args.target_average==None else args.target_average))
+				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_note,adjust_vol(cur_pwr,cur_note,0)))
+				write_note(delay_time,cur_note,pwr=0)
 				cur_pwr = inc_pwr + cur_pwr
-			cur_key = cur_key + 1
+			cur_note = cur_note + 1
 
-		print ('\ntest.py file has been generated to play from keys {0}'
+		print ('\ntest.py file has been generated to play from notes {0}'
 			  '-{1} with power {2} to {3} in increments of {4}'
 		 	  'delay {5}ms'
-		 	  ''.format(start_key, end_key, min_pwr, max_pwr,inc_pwr,delay_time))
+		 	  ''.format(start_note, end_note, min_pwr, max_pwr,inc_pwr,delay_time))
 	elif len(args.test) == 4:
-		#this will write a testing file with desired pwr from start_key to end_key
+		#this will write a testing file with desired pwr from start_note to end_note
 		write_file = open('test.py', 'w')
-		writeHeader(write_file)
+		write_header(write_file)
 
-		start_key=int(args.test[0])
-		end_key=int(args.test[1])
+		start_note=int(args.test[0])
+		end_note=int(args.test[1])
 		pwr=int(args.test[2])
 		delay_time=int(args.test[3])
-		cur_key = start_key
+		cur_note = start_note
 
 		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
 
-		while cur_key <= end_key:
-			writeKey(write_file=write_file,time=0,key=cur_key,vol=adjust_vol(pwr,cur_key,0 if args.target_average == None else args.target_average),hold=True)
-			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_key,adjust_vol(pwr,cur_key,0)))
-			writeKey(write_file=write_file,time=delay_time,key=cur_key,pwr=0, hold=True) 
-			cur_key = cur_key + 1
+		while cur_note <= end_note:
+			write_note(write_file=write_file,time=0,note=cur_note,vol=adjust_vol(pwr,cur_note,0 if args.target_average == None else args.target_average),hold=True)
+			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_note,adjust_vol(pwr,cur_note,0)))
+			write_note(write_file=write_file,time=delay_time,note=cur_note,pwr=0, hold=True) 
+			cur_note = cur_note + 1
 
-		print ('\ntest.py file has been generated to play keys {0}-{1}'
+		print ('\ntest.py file has been generated to play notes {0}-{1}'
 			  ' with power {2} and delay {3}ms'
-		 	  ''.format(start_key, end_key, pwr, delay_time))
+		 	  ''.format(start_note, end_note, pwr, delay_time))
 	else:
 		parser.print_help()
 else:
