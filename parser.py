@@ -101,6 +101,21 @@ if(args.input_file):
 	#	 if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50ms) then timestamp(NoteOff) - 50ms
 	# 2. adds hold note 
 	notes.sort(key=lambda x: (x['note'],x['time']))
+
+	for index,note in enumerate(notes):
+		if index<len(notes)-1:
+			if note['action'] == 'NoteOff' and note['note']==notes[index+1]['note']:
+				noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
+				if nextNoteOn['time'] - noteOff['time'] < const.TAIL_GAP_MSEC:
+					if nextNoteOn['time'] - const.TAIL_GAP_MSEC - noteOn['time'] < const.MIN_NOTE_DUR: 
+						noteOff['time'] = noteOn['time'] + const.MIN_NOTE_DUR
+					else: noteOff['time'] = nextNoteOn['time'] - const.TAIL_GAP_MSEC
+				if noteOff['time'] - noteOn['time'] < const.MIN_NOTE_DUR:
+					noteOff['time']=noteOn['time']+const.MIN_NOTE_DUR
+				if noteOff['time'] > nextNoteOn['time']:
+					noteOff['time']=nextNoteOn['time']
+
+
 	for index, note in enumerate(notes):
 		if index<len(notes)-1:
 			if note['action'] == 'NoteOn' and note['val']!=const.HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
@@ -109,12 +124,12 @@ if(args.input_file):
 										  'note': note['note'],
 										  'val': const.HOLD_DELAY_POWER,
 										  'action': 'NoteOn'})
-			elif note['action'] == 'NoteOff' and note['note']==notes[index+1]['note']:
-				noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
-				if abs(noteOff['time'] - nextNoteOn['time']) < const.TAIL_GAP_MSEC:
-					if nextNoteOn['time'] - const.TAIL_GAP_MSEC - noteOn['time'] < const.MIN_NOTE_DUR: 
-						noteOff['time'] = noteOn['time'] + const.MIN_NOTE_DUR
-					else: noteOff['time'] = nextNoteOn['time'] - const.TAIL_GAP_MSEC	
+			
+	# for index,note in enumerate(notes):
+	# 	if index<len(notes)-2:
+	# 		if note['action']=='NoteOn' and note['val']!=const.HOLD_DELAY_POWER and notes[index+1]['val']!=const.HOLD_DELAY_POWER:
+	# 			if notes[index+1]['time'] - note['time'] < const.MIN_NOTE_DUR:
+	# 				print note, '---------', notes[index+1]
 
 	#update timestamp to delta t
 	notes.sort(key=lambda x: (x['time'],x['note']))
