@@ -8,8 +8,8 @@
 # SUSTAIN_NOTE => the note that a sustain will be used 
 # NOTE_SCALE => will multiply the value set to the corresponding note
 
-TAIL_GAP_MSEC = 250
-MIN_NOTE_DUR = 140
+TAIL_GAP_MSEC = 150
+MIN_NOTE_DUR = 200
 HOLD_DELAY_POWER_START_MSEC = 170
 HOLD_DELAY_POWER = 3
 COM_SERIAL = 'COM11'
