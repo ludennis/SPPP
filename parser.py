@@ -26,8 +26,6 @@ def compress_note(note,tmax,tmin):
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_key] [end_key] [pwr] [delay_time] or -test [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
-parser.add_argument('--tmax',type=int,default=180,help='--tmax=[target_max_power]')
-parser.add_argument('--tmin',type=int,default=105,help='--tmin=[target_min_power]')
 args = parser.parse_args()
 
 if(args.input_file):
@@ -75,7 +73,7 @@ if(args.input_file):
 	#	4. bring them back with the desired tmax and tmin (by adding orig_tmax - tmax or something like that)
 	# 	5. apply preset profile of notes after this
 
-	tmax, tmin = (args.tmax-args.tmin)/2.0, (args.tmin-args.tmax)/2.0
+	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
 	for note in notes:
 		if note['action']=='NoteOn': note['val'] -= avg_vol
 
@@ -96,7 +94,7 @@ if(args.input_file):
 		else: note['val'] = note['val'] * high_multiplier
 
 	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn', notes)):
-		note['val'] = int(note['val'] + args.tmax - tmax)
+		note['val'] = int(note['val'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
 
