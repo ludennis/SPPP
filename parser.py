@@ -46,7 +46,7 @@ if(args.input_file):
 			d = match.groupdict()
 			timestamp = int(d['min']) * 60000 + int(d['sec']) * 1000 + int(d['msec'])
 			notes.append({'time':timestamp,
-						  'note':int(d['note']) if 'note' in d else SUSTAIN_NOTE,
+						  'note':int(d['note']) if 'note' in d else const.SUSTAIN_NOTE,
 						  'val':int(d['val']) if 'val' in d else int(0),
 						  'action':d['action']})
 			if d['action'] == 'NoteOn': 
