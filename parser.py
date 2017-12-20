@@ -79,17 +79,17 @@ if(args.input_file):
 
 	notes.sort(key=lambda x: (x['action'],x['val']))
 
-	ten_percent = num_of_notes / 10
+	num_percent = num_of_notes / const.NUM_PERCENT
 	low_multiplier, high_multiplier = 0.0, 0.0
 	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn' and x['val'] < 0,notes)):
-		if index<ten_percent: note['val'] = tmin;
-		elif index==ten_percent: 
+		if index<num_percent: note['val'] = tmin;
+		elif index==num_percent: 
 			low_multiplier = tmin/note['val'] if note['val']!=0 else 1
 		else: note['val'] = note['val'] * low_multiplier
 
 	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn' and x['val'] >= 0, reversed(notes))):
-		if index<ten_percent: note['val'] = tmax;
-		elif index==ten_percent: 
+		if index<num_percent: note['val'] = tmax;
+		elif index==num_percent: 
 			high_multiplier=tmax/note['val'] if note['val']!=0 else 1
 		else: note['val'] = note['val'] * high_multiplier
 

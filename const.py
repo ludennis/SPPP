@@ -7,6 +7,7 @@
 # COM_SERIAL => serial number when connecting to Arduino
 # SUSTAIN_NOTE => the note that a sustain will be used 
 # NOTE_SCALE => will multiply the value set to the corresponding note
+# NUM_PERCENT => number of percentage of notes to be outside of the TARGET_MAX and TARGET_MIN
 
 # TAIL_GAP_MSEC = 30
 # MIN_NOTE_DUR = 35
@@ -26,6 +27,7 @@ COM_SERIAL = 'COM11'
 SUSTAIN_NOTE = 150
 TARGET_MAX = 155
 TARGET_MIN = 138
+NUM_PERCENT = 10
 
 NOTE_SCALE = [0, 
 			 0,0,0,0,0,0,0,0,0,0,     #ignore
