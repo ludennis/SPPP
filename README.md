@@ -21,3 +21,4 @@ TODO's
 3. ensure all notes to have MIN_NOTE_DUR
 4. Apply MIN_NOTE_DUR to only repetitive notes (repetitive notes would be the same note to be played in x ms)
 5. ensure all notes that are not repetitve gets elongated duration
+6. Make multiplier to be exponential to squeeze and strrtch more for more dynamics.
