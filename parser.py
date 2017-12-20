@@ -1,6 +1,7 @@
 import argparse
 import re
 import const
+import math
 
 def write_header(write_file):
 	write_file.write('import serial\n')
@@ -80,18 +81,18 @@ if(args.input_file):
 	notes.sort(key=lambda x: (x['action'],x['val']))
 
 	num_percent = num_of_notes / const.NUM_PERCENT
-	low_multiplier, high_multiplier = 0.0, 0.0
+	low_exp_power, high_exp_power = 0.0, 0.0
 	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn' and x['val'] < 0,notes)):
 		if index<num_percent: note['val'] = tmin;
 		elif index==num_percent: 
-			low_multiplier = tmin/note['val'] if note['val']!=0 else 1
-		else: note['val'] = note['val'] * low_multiplier
+			low_exp_power = math.log(tmin/note['val']) if note['val']!=0 else 1
+		else: note['val'] = note['val'] * math.exp(low_exp_power)
 
 	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn' and x['val'] >= 0, reversed(notes))):
 		if index<num_percent: note['val'] = tmax;
 		elif index==num_percent: 
-			high_multiplier=tmax/note['val'] if note['val']!=0 else 1
-		else: note['val'] = note['val'] * high_multiplier
+			high_exp_power=math.log(tmax/note['val']) if note['val']!=0 else 1
+		else: note['val'] = note['val'] * math.exp(high_exp_power)
 
 	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn', notes)):
 		note['val'] = int(note['val'] + const.TARGET_MAX - tmax)
