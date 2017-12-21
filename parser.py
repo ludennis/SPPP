@@ -27,6 +27,7 @@ def compress_note(note,tmax,tmin):
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [pwr] [delay_time] or -test [start_note] [end_note] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
+parser.add_argument('-calibrate', action='store_true')
 args = parser.parse_args()
 
 if(args.input_file):
@@ -202,5 +203,21 @@ elif (args.test):
 		 	  ''.format(start_note, end_note, pwr, delay_time))
 	else:
 		parser.print_help()
+elif (args.calibrate):
+	print 'calibrating'
+	# this should be communicating with arduino in the value received
+	ref_voltage = 1.0 
+	power = 120.0
+	recv_voltage = 0.0
+	
+	def calibrate(power):
+		power+=1
+
+	while recv_voltage < ref_voltage:
+		calibrate(power)
+		recv_voltage+=0.1
+		print 'power: ' + str(power) + ' recv_voltage: ' + str(recv_voltage)
+
+
 else:
 	parser.print_help()

@@ -18,3 +18,4 @@ Commands for 'parser.py'
 TODO's
 1. add version
 2. to read straight from midi file
+3. prepare for microphone
