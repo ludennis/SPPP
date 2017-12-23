@@ -19,3 +19,6 @@ TODO's
 1. add version
 2. to read straight from midi file
 3. Make multiplier to be exponential to squeeze and stretch more for more dynamics.***
+4. Apply logarithm to each note with variable of base to use
+5. Replace offsets after calibrate
+
