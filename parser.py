@@ -3,6 +3,10 @@ import re
 import const
 import math
 
+#for -calibrate option
+import serial.tools.list_ports
+import time
+
 def write_header(write_file):
 	write_file.write('import serial\n')
 	write_file.write('import time\n')
@@ -205,18 +209,32 @@ elif (args.test):
 		parser.print_help()
 elif (args.calibrate):
 	print 'calibrating'
-	# this should be communicating with arduino in the value received
-	ref_voltage = 1.0 
+	# this should be communicating with Arduino in the value received
+	target_mic = 350
 	power = 120.0
-	recv_voltage = 0.0
-	
-	def calibrate(power):
-		power+=1
+	recv_mic = 0.0
 
-	while recv_voltage < ref_voltage:
-		calibrate(power)
-		recv_voltage+=0.1
-		print 'power: ' + str(power) + ' recv_voltage: ' + str(recv_voltage)
+	#setup for serialization with Arduino
+
+	# ports = list(serial.tools.list_ports.comports())
+	# for p in ports:
+	# 	print p
+
+	ser = serial.Serial('/dev/cu.wchusbserial1420', 9600, timeout=5)
+	while(True):
+		msg = ser.readline()
+		print msg
+
+	
+
+
+	# while recv_mic != target_mic:
+	# 	power = power + (target_mic - recv_mic)/4.0
+	# 	print 'listening to arduino'
+	# 	ser.write('<0,{},113>'.format(power))
+	# 	#python will recv an integer from Arduino
+	# 	recv_mic = ser.readline()
+	# 	print 'power: {} recv_mic: {}'.format(power,recv_mic)
 
 
 else:
