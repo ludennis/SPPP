@@ -31,7 +31,7 @@ def compress_note(note,tmax,tmin):
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [pwr] [delay_time] or -test [start_note] [end_note] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
-parser.add_argument('-calibrate', action='store_true')
+parser.add_argument('-calibrate', action='store_true', help='find desired arduino power with mic')
 args = parser.parse_args()
 
 if(args.input_file):
@@ -216,16 +216,24 @@ elif (args.calibrate):
 
 	#setup for serialization with Arduino
 
+	#sould automatically find the port to connect to
 	# ports = list(serial.tools.list_ports.comports())
 	# for p in ports:
 	# 	print p
 
-	ser = serial.Serial('/dev/cu.wchusbserial1420', 9600, timeout=5)
-	while(True):
-		msg = ser.readline()
-		print msg
-
+	# ser = serial.Serial('/dev/cu.wchusbserial1420', 9600, timeout=5)
+	ser = serial.Serial(const.COM_SERIAL, 115200, timeout=5)
 	
+	while (target_mic-10 < recv_mic < target_mic+10)==False:
+		power = power + (target_mic-recv_mic)/4.0
+		print 'writing <0,50,{}>'.format(power)
+		ser.write('<0,50,{}>'.format(power))
+		recv_mic = ser.readline()
+		print 'recv_mic: {}\n'.format(recv_mic)
+		print 'writing <0,50,0>'
+		ser.write('<0,50,0>')
+	print 'recv_mic: {} \n power: {}'.format(recv_mic,power)
+		
 
 
 	# while recv_mic != target_mic:
