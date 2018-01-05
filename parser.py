@@ -229,8 +229,8 @@ elif (args.calibrate):
 
 		print 'writing <0,50,{}>'.format(power)
 		ser.write('<0,50,{}>'.format(power))
+		print 'recv_mic: {}'.format(ser.readline())
 		recv_mic = int(ser.readline())
-		print 'recv_mic: {}\n'.format(recv_mic)
 		print 'writing <0,50,0>'
 		ser.write('<0,50,0>')
 	print 'recv_mic: {} \n power: {}'.format(recv_mic,power)
