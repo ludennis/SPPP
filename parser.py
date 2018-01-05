@@ -230,8 +230,8 @@ elif (args.calibrate):
 	while (target_mic-const.TOLERANCE < recv_mic < target_mic+const.TOLERANCE)==False:
 		power = power + (target_mic-recv_mic)/const.ADJUST_POWER_RATE
 
-		print 'writing <50,{},{},{}>'.format(power,const.HOLD_DELAY_POWER,const.HOLD_DELAY_POWER_START_MSEC)
-		ser.write('<50,{},{},{}>'.format(power,const.HOLD_DELAY_POWER,const.HOLD_DELAY_POWER_START_MSEC))
+		print 'writing <50,{},{},{}>'.format(int(power),const.HOLD_DELAY_POWER,const.HOLD_DELAY_POWER_START_MSEC)
+		ser.write('<50,{},{},{}>'.format(int(power),const.HOLD_DELAY_POWER,const.HOLD_DELAY_POWER_START_MSEC))
 		print 'recv_mic: {}'.format(ser.readline())
 		recv_mic = int(ser.readline())
 	print 'recv_mic: {} \n power: {}'.format(recv_mic,power)
