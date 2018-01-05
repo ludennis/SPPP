@@ -225,11 +225,11 @@ elif (args.calibrate):
 	ser = serial.Serial(const.COM_SERIAL, 115200, timeout=5)
 	
 	while (target_mic-const.TOLERANCE < recv_mic < target_mic+const.TOLERANCE)==False:
-		power = power + (target_mic-recv_mic)/4.0
+		power = power + (target_mic-recv_mic)/const.ADJUST_POWER_RATE
 
 		print 'writing <0,50,{}>'.format(power)
 		ser.write('<0,50,{}>'.format(power))
-		recv_mic = ser.readline()
+		recv_mic = int(ser.readline())
 		print 'recv_mic: {}\n'.format(recv_mic)
 		print 'writing <0,50,0>'
 		ser.write('<0,50,0>')

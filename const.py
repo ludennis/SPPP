@@ -8,6 +8,8 @@
 # SUSTAIN_NOTE => the note that a sustain will be used 
 # NOTE_SCALE => will multiply the value set to the corresponding note
 # NUM_PERCENT => number of percentage of notes to be outside of the TARGET_MAX and TARGET_MIN
+# TOLERANCE => tolerance level of how much calibrate will find desired mic
+# ADJUST_POWER_RATE => const to change how fast the power is being adjusted when calibrating
 
 # TAIL_GAP_MSEC = 30
 # MIN_NOTE_DUR = 35
@@ -29,6 +31,7 @@ TARGET_MAX = 155
 TARGET_MIN = 100
 NUM_PERCENT = 10
 TOLERANCE = 10
+ADJUST_POWER_RATE = 4.0
 
 NOTE_SCALE = [0, 
 		 	  0,0,0,0,0,0,0,0,0,0,     #ignore
