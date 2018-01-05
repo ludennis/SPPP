@@ -223,16 +223,17 @@ elif (args.calibrate):
 
 	# ser = serial.Serial('/dev/cu.wchusbserial1420', 9600, timeout=5)
 	ser = serial.Serial(const.COM_SERIAL, 115200, timeout=5)
-	
+
+
+	# write to arduino <note,power,holdpower,holdmsec>	
+	print 'target_mic volue: {}'.format(target_mic)
 	while (target_mic-const.TOLERANCE < recv_mic < target_mic+const.TOLERANCE)==False:
 		power = power + (target_mic-recv_mic)/const.ADJUST_POWER_RATE
 
-		print 'writing <0,50,{}>'.format(power)
-		ser.write('<0,50,{}>'.format(power))
+		print 'writing <50,{},{},{}>'.format(power,const.HOLD_DELAY_POWER,const.HOLD_DELAY_POWER_START_MSEC)
+		ser.write('<50,{},{},{}>'.format(power,const.HOLD_DELAY_POWER,const.HOLD_DELAY_POWER_START_MSEC))
 		print 'recv_mic: {}'.format(ser.readline())
 		recv_mic = int(ser.readline())
-		print 'writing <0,50,0>'
-		ser.write('<0,50,0>')
 	print 'recv_mic: {} \n power: {}'.format(recv_mic,power)
 		
 
