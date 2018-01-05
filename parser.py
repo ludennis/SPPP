@@ -211,7 +211,7 @@ elif (args.calibrate):
 	print 'calibrating'
 	# this should be communicating with Arduino in the value received
 	target_mic = 350
-	power = 120.0
+	power = 20.0
 	recv_mic = 0.0
 
 	#setup for serialization with Arduino
@@ -224,8 +224,9 @@ elif (args.calibrate):
 	# ser = serial.Serial('/dev/cu.wchusbserial1420', 9600, timeout=5)
 	ser = serial.Serial(const.COM_SERIAL, 115200, timeout=5)
 	
-	while (target_mic-10 < recv_mic < target_mic+10)==False:
+	while (target_mic-const.TOLERANCE < recv_mic < target_mic+const.TOLERANCE)==False:
 		power = power + (target_mic-recv_mic)/4.0
+
 		print 'writing <0,50,{}>'.format(power)
 		ser.write('<0,50,{}>'.format(power))
 		recv_mic = ser.readline()
