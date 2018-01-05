@@ -28,6 +28,7 @@ SUSTAIN_NOTE = 150
 TARGET_MAX = 155
 TARGET_MIN = 100
 NUM_PERCENT = 10
+TOLERANCE = 10
 
 NOTE_SCALE = [0, 
 		 	  0,0,0,0,0,0,0,0,0,0,     #ignore
@@ -71,7 +72,7 @@ NOTE_OFFSET = [0,
 			   0,0,0,0,0,0,0,0,0,0,     #ignore
 			   0,0,0,0,0,0,0,0,0,0]     #ignore this is up to 150
 
-NOTE_VOLTAGE = [0, 
+DESIRED_MIC = [0, 
 			    0,0,0,0,0,0,0,0,0,0,     #ignore
 			    0,0,0,0,0,0,0,0,0,0,     #ignore
 			    0,0,0,				     #ignore
