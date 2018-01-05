@@ -233,7 +233,8 @@ elif (args.calibrate):
 		print 'writing <50,{},{},{}>'.format(int(power),const.HOLD_DELAY_POWER,const.HOLD_DELAY_POWER_START_MSEC)
 		ser.write('<50,{},{},{}>'.format(int(power),const.HOLD_DELAY_POWER,const.HOLD_DELAY_POWER_START_MSEC))
 		print 'recv_mic: {}'.format(ser.readline())
-		recv_mic = int(ser.readline())
+		if int(ser.readline()) > 0:
+			recv_mic = int(ser.readline())
 	print 'recv_mic: {} \n power: {}'.format(recv_mic,power)
 		
 
