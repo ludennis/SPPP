@@ -41,9 +41,8 @@ if(args.input_file):
 	num_of_notes = 0
 	sum_vol = 0
 
-	for line in read_file:
-		
-		# <timestamp,event,note,midipower>
+	# read from txt and store into lists of <timestamp,event,note,midipower>
+	for line in read_file:		
 		timestamp,event,note,midipower=line.strip().split(',')
 		notes.append({'timestamp':int(timestamp),'event':int(event),'note':int(note),'midipower':int(midipower)})
 		if int(event) == 1:
@@ -58,17 +57,17 @@ if(args.input_file):
 		if note['event']==1: note['midipower'] -= avg_vol
 	notes.sort(key=lambda x: (x['event'],x['midipower']))
 	num_percent = num_of_notes / const.NUM_PERCENT
-	low_exp_power, high_exp_power = 0.0, 0.0
+	low_linear_power, high_linear_power = 0.0, 0.0
 	for index, note in enumerate(filter(lambda x:x['event']==1 and x['midipower'] < 0,notes)):
 		if index<num_percent: note['midipower'] = tmin;
 		elif index==num_percent: 
-			low_exp_power = math.log(tmin/note['midipower']) if note['midipower']!=0 else 1
-		else: note['midipower'] = note['midipower'] * math.exp(low_exp_power)
+			low_exp_power = tmin/note['midipower'] if note['midipower']!=0 else 1
+		else: note['midipower'] = note['midipower'] * low_linear_power
 	for index, note in enumerate(filter(lambda x:x['event']==1 and x['midipower'] >= 0, reversed(notes))):
 		if index<num_percent: note['midipower'] = tmax;
 		elif index==num_percent: 
-			high_exp_power=math.log(tmax/note['midipower']) if note['midipower']!=0 else 1
-		else: note['midipower'] = note['midipower'] * math.exp(high_exp_power)
+			high_exp_power=tmax/note['midipower'] if note['midipower']!=0 else 1
+		else: note['midipower'] = note['midipower'] * high_linear_power
 
 	for index, note in enumerate(filter(lambda x:x['event']==1, notes)):
 		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
