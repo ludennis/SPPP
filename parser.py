@@ -40,22 +40,17 @@ if(args.input_file):
 	for line in read_file:
 		
 		# <timestamp,event,note,midipower>
+		# event:
+		# 1, note on.
+		# 2, note off.
+		# 3, tell arduino to begin the timer. Timer is used to sync song by comparing timer TO timestamp.
+		# 4, tell arduino to turn off all keys.
+		
 		timestamp,event,note,midipower=line.strip().split(',')
 		print '<{},{},{},{}>'.format(timestamp,event,note,midipower)
-
-		match = sorted([NoteOn,NoteOff,Sustain],reverse=True)[0]
-		if match:
-			d = match.groupdict()
-			timestamp = int(d['min']) * 60000 + int(d['sec']) * 1000 + int(d['msec'])
-			notes.append({'time':timestamp,
-						  'note':int(d['note']) if 'note' in d else const.SUSTAIN_NOTE,
-						  'val':int(d['val']) if 'val' in d else int(0),
-						  'action':d['action']})
-			if d['action'] == 'NoteOn': 
-				num_of_notes+=1 
-				sum_vol+=int(d['val']) 
-		else:
-			continue
+		if event == 1:
+			num_of_notes+=1
+			sum_vol+=int(midipower)
 
 	avg_vol = sum_vol/num_of_notes
 	notes=filter(lambda x:x['action']=='NoteOn' or x['action']=='NoteOff' or x['action']=='Sustain',notes)
