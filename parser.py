@@ -52,12 +52,11 @@ if(args.input_file):
 
 	avg_vol = sum_vol/num_of_notes
 
+	# normalize all notes
 	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
 	for note in notes:
 		if note['event']==1: note['midipower'] -= avg_vol
-
 	notes.sort(key=lambda x: (x['event'],x['midipower']))
-
 	num_percent = num_of_notes / const.NUM_PERCENT
 	low_exp_power, high_exp_power = 0.0, 0.0
 	for index, note in enumerate(filter(lambda x:x['event']==1 and x['midipower'] < 0,notes)):
@@ -65,7 +64,6 @@ if(args.input_file):
 		elif index==num_percent: 
 			low_exp_power = math.log(tmin/note['midipower']) if note['midipower']!=0 else 1
 		else: note['midipower'] = note['midipower'] * math.exp(low_exp_power)
-
 	for index, note in enumerate(filter(lambda x:x['event']==1 and x['midipower'] >= 0, reversed(notes))):
 		if index<num_percent: note['midipower'] = tmax;
 		elif index==num_percent: 
@@ -91,7 +89,7 @@ if(args.input_file):
 				if noteOff['timestamp'] > nextNoteOn['timestamp']:
 					noteOff['timestamp']=nextNoteOn['timestamp']
 
-	# ensure notes have minimum duration
+	# minimum duration
 	for index, note in enumerate(notes):
 		if index<len(notes)-1:
 			if note['event'] == 1 and note['midipower']!=const.HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
@@ -101,9 +99,8 @@ if(args.input_file):
 										  'midipower': const.HOLD_DELAY_POWER,
 										  'event': 1})
 
-	notes.sort(key=lambda x: (x['timestamp']))
-
 	#write files
+	notes.sort(key=lambda x: (x['timestamp']))
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
 	write_header(write_file)
 	for note in notes:
@@ -115,15 +112,16 @@ if(args.input_file):
 	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
 elif (args.test):
+	
 	write_file = open('test.py', 'w')
 	write_header(write_file)
 	start_note=int(args.test[0])
 	end_note=int(args.test[1])
 	delay_time=int(args.test[2])
 	cur_note = start_note
-
+	
+	# -test [start_note] [end_note] [delay_time] [min_pwr] [max_pwr] [inc_pwr] 
 	if len(args.test) == 6:
-		# -test [start_note] [end_note] [delay_time] [min_pwr] [max_pwr] [inc_pwr] 
 		min_pwr=int(args.test[3])
 		max_pwr=int(args.test[4])
 		inc_pwr=int(args.test[5])
@@ -152,8 +150,8 @@ elif (args.test):
 		 	  'delay {5}ms'
 		 	  ''.format(start_note, end_note, min_pwr, max_pwr,inc_pwr,delay_time))
 
+	# -test [start_note] [end_note] [delay_time] [pwr] 
 	elif len(args.test) == 4:
-		# -test [start_note] [end_note] [delay_time] [pwr] 
 		pwr=int(args.test[3])
 
 		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
