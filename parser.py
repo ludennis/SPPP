@@ -43,10 +43,6 @@ if(args.input_file):
 		timestamp,event,note,midipower=line.strip().split(',')
 		print '<{},{},{},{}>'.format(timestamp,event,note,midipower)
 
-		NoteOn =  re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: [0-9]+ note: (?P<note>[0-9]+) vol: (?P<val>[0-9]+) dur: (?P<dur>[0-9]+)$',line)
-		NoteOff = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: [0-9]+ note: (?P<note>[0-9]+)$',line)
-		Sustain = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: [0-9]+ value: (?P<val>[0-9]+)$',line)
-
 		match = sorted([NoteOn,NoteOff,Sustain],reverse=True)[0]
 		if match:
 			d = match.groupdict()
