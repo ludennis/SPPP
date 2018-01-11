@@ -38,6 +38,11 @@ if(args.input_file):
 	sum_vol = 0
 
 	for line in read_file:
+		
+		# <timestamp,event,note,midipower>
+		timestamp,event,note,midipower=line.strip().split(',')
+		print '<{},{},{},{}>'.format(timestamp,event,note,midipower)
+
 		NoteOn =  re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: [0-9]+ note: (?P<note>[0-9]+) vol: (?P<val>[0-9]+) dur: (?P<dur>[0-9]+)$',line)
 		NoteOff = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: [0-9]+ note: (?P<note>[0-9]+)$',line)
 		Sustain = re.match(r'[0-9]+,Min:Sec:Msec=(?P<min>[0-9]+):(?P<sec>[0-9]+):(?P<msec>[0-9]+),(?P<action>[a-zA-Z]+) chan: [0-9]+ value: (?P<val>[0-9]+)$',line)
@@ -99,7 +104,6 @@ if(args.input_file):
 					noteOff['time']=noteOn['time']+const.MIN_NOTE_DUR
 				if noteOff['time'] > nextNoteOn['time']:
 					noteOff['time']=nextNoteOn['time']
-
 
 	for index, note in enumerate(notes):
 		if index<len(notes)-1:
