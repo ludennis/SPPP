@@ -47,13 +47,16 @@ if(args.input_file):
 		# 4, tell arduino to turn off all keys.
 		
 		timestamp,event,note,midipower=line.strip().split(',')
+		notes.append({'timestamp':int(timestamp),'event':int(event),'note':int(note),'midipower':int(midipower)})
 		print '<{},{},{},{}>'.format(timestamp,event,note,midipower)
-		if event == 1:
+		if int(event) == 1:
 			num_of_notes+=1
 			sum_vol+=int(midipower)
 
+
+
 	avg_vol = sum_vol/num_of_notes
-	notes=filter(lambda x:x['action']=='NoteOn' or x['action']=='NoteOff' or x['action']=='Sustain',notes)
+	notes=filter(lambda x:x['event']==1 or x['event']==2)
 
 	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
 	for note in notes:
