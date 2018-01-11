@@ -123,9 +123,8 @@ if(args.input_file):
 	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
 elif (args.test):
-	#TODO: to apply multiplier and offset
-	#generates a 'test.py' to play the piano 
 	if len(args.test) == 6:
+		# -test [start_note] [end_note] [min_pwr] [max_pwr] [inc_pwr] [delay_time]
 		write_file = open('test.py', 'w')
 		write_header(write_file)
 
@@ -158,7 +157,7 @@ elif (args.test):
 		 	  'delay {5}ms'
 		 	  ''.format(start_note, end_note, min_pwr, max_pwr,inc_pwr,delay_time))
 	elif len(args.test) == 4:
-		#this will write a testing file with desired pwr from start_note to end_note
+		# -test [start_note] [end_note] [pwr] [delay_time]
 		write_file = open('test.py', 'w')
 		write_header(write_file)
 
