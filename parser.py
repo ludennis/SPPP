@@ -119,6 +119,7 @@ if(args.input_file):
 							  event=note['event'],
 							  note=note['note'],
 							  midipower=note['midipower'])
+	write_footer(write_file)
 	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
 elif (args.test):
@@ -166,8 +167,6 @@ elif (args.test):
 
 		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
-
-
 
 		while cur_note <= end_note:
 			write_note(write_file=write_file,time=0,note=cur_note,vol=adjust_vol(pwr,cur_note,0 if args.target_average == None else args.target_average),hold=True)
