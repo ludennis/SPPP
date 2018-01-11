@@ -144,9 +144,12 @@ elif (args.test):
 		while cur_note <= end_note:
 			cur_pwr = min_pwr
 			while cur_pwr <= max_pwr:
-				write_note(write_file=write_file,time=0,note=cur_note,vol=adjust_vol(cur_pwr,cur_note,0 if args.target_average==None else args.target_average))
-				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_note,adjust_vol(cur_pwr,cur_note,0)))
-				write_note(delay_time,cur_note,pwr=0)
+				write_note(write_file=write_file,timestamp=0,
+												 event=1,
+												 note=cur_note,
+												 midipower=compress_note(note=cur_note,tmax=max_pwr,tmin=min_pwr))
+				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_note,compress_note(note=cur_note,tmax=max_pwr,tmin=min_pwr)))
+				write_note(timestamp=delay_time,event=2,note=cur_note,midipower=0)
 				cur_pwr = inc_pwr + cur_pwr
 			cur_note = cur_note + 1
 
@@ -169,9 +172,9 @@ elif (args.test):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
 
 		while cur_note <= end_note:
-			write_note(write_file=write_file,time=0,note=cur_note,vol=adjust_vol(pwr,cur_note,0 if args.target_average == None else args.target_average),hold=True)
+			write_note(write_file=write_file,timestamp=0,event=1,note=cur_note,midipower=adjust_note_vol(pwr,cur_note),hold=True)
 			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_note,adjust_vol(pwr,cur_note,0)))
-			write_note(write_file=write_file,time=delay_time,note=cur_note,pwr=0, hold=True) 
+			write_note(write_file=write_file,timestamp=delay_time,event=2,note=cur_note,midipower=0, hold=True) 
 			cur_note = cur_note + 1
 
 		write_footer(write_file)
