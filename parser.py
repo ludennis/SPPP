@@ -127,14 +127,14 @@ elif (args.test):
 	write_header(write_file)
 	start_note=int(args.test[0])
 	end_note=int(args.test[1])
+	delay_time=int(args.test[2])
 	cur_note = start_note
 
 	if len(args.test) == 6:
 		# -test [start_note] [end_note] [delay_time] [min_pwr] [max_pwr] [inc_pwr] 
-		min_pwr=int(args.test[2])
-		max_pwr=int(args.test[3])
-		inc_pwr=int(args.test[4])
-		delay_time=int(args.test[5])
+		min_pwr=int(args.test[3])
+		max_pwr=int(args.test[4])
+		inc_pwr=int(args.test[5])
 		cur_pwr = min_pwr
 
 		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
@@ -162,8 +162,7 @@ elif (args.test):
 
 	elif len(args.test) == 4:
 		# -test [start_note] [end_note] [delay_time] [pwr] 
-		pwr=int(args.test[2])
-		delay_time=int(args.test[3])
+		pwr=int(args.test[3])
 
 		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
