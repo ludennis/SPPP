@@ -41,9 +41,8 @@ if(args.input_file):
 	num_of_notes = 0
 	sum_vol = 0
 
-	for line in read_file:
-		
-		# <timestamp,event,note,midipower>
+	# read from txt and store into lists of <timestamp,event,note,midipower>
+	for line in read_file:		
 		timestamp,event,note,midipower=line.strip().split(',')
 		notes.append({'timestamp':int(timestamp),'event':int(event),'note':int(note),'midipower':int(midipower)})
 		if int(event) == 1:
