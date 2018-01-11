@@ -10,10 +10,10 @@ def write_header(write_file):
 	write_file.write('time.sleep(1)\n\n')
 	write_file.write('#<time,note,power>\n')
 
-def write_note(write_file,time,note,power,hold=False):
-	write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(time,note,power))
-	if(hold==True and power > 3):
-		write_file.write('ser.write(\'<{0},{1},{2}>\')\n'.format(const.HOLD_DELAY_POWER_START_MSEC,note,const.HOLD_DELAY_POWER))
+def write_note(write_file,timestamp,event,note,midipower,hold=False):
+	write_file.write('ser.write(\'<{},{},{},{}>\')\n'.format(timestamp,event,note,midipower))
+	if(hold==True and midipower > 3):
+		write_file.write('ser.write(\'<{},{},{},{}>\')\n'.format(timestamp + const.HOLD_DELAY_POWER_START_MSEC,event,note,const.HOLD_DELAY_POWER))
 	write_file.write('ser.readline()\n')
 
 def adjust_note_vol(note,avg):
@@ -53,8 +53,6 @@ if(args.input_file):
 			num_of_notes+=1
 			sum_vol+=int(midipower)
 
-
-
 	avg_vol = sum_vol/num_of_notes
 	notes=filter(lambda x:x['event']==1 or x['event']==2,notes)
 
@@ -82,9 +80,7 @@ if(args.input_file):
 		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
-	# 1. cut the tail(end) of a note when it's immediately played again in 50ms 
-	#	 if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50ms) then timestamp(NoteOff) - 50ms
-	# 2. adds hold note 
+	# cut tail 
 	notes.sort(key=lambda x: (x['note'],x['timestamp']))
 	for index,note in enumerate(notes):
 		if index<len(notes)-1:
@@ -99,6 +95,7 @@ if(args.input_file):
 				if noteOff['timestamp'] > nextNoteOn['timestamp']:
 					noteOff['timestamp']=nextNoteOn['timestamp']
 
+	# ensure notes have minimum duration
 	for index, note in enumerate(notes):
 		if index<len(notes)-1:
 			if note['event'] == 1 and note['midipower']!=const.HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
@@ -114,7 +111,10 @@ if(args.input_file):
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
 	write_header(write_file)
 	for note in notes:
-		write_note(write_file,time=note['timestamp'],note=note['note'],power=note['midipower'])
+		write_note(write_file,timestamp=note['timestamp'],
+							  event=note['event'],
+							  note=note['note'],
+							  midipower=note['midipower'])
 	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
 elif (args.test):
