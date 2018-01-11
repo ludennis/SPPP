@@ -110,12 +110,6 @@ if(args.input_file):
 										  'note': note['note'],
 										  'val': const.HOLD_DELAY_POWER,
 										  'action': 'NoteOn'})
-			
-	# for index,note in enumerate(notes):
-	# 	if index<len(notes)-2:
-	# 		if note['action']=='NoteOn' and note['val']!=const.HOLD_DELAY_POWER and notes[index+1]['val']!=const.HOLD_DELAY_POWER:
-	# 			if notes[index+1]['time'] - note['time'] < const.MIN_NOTE_DUR:
-	# 				print note, '---------', notes[index+1]
 
 	#update timestamp to delta t
 	notes.sort(key=lambda x: (x['time'],x['note']))
