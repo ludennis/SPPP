@@ -123,18 +123,18 @@ if(args.input_file):
 	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
 elif (args.test):
+	write_file = open('test.py', 'w')
+	write_header(write_file)
+	start_note=int(args.test[0])
+	end_note=int(args.test[1])
+	cur_note = start_note
+
 	if len(args.test) == 6:
 		# -test [start_note] [end_note] [min_pwr] [max_pwr] [inc_pwr] [delay_time]
-		write_file = open('test.py', 'w')
-		write_header(write_file)
-
-		start_note=int(args.test[0])
-		end_note=int(args.test[1])
 		min_pwr=int(args.test[2])
 		max_pwr=int(args.test[3])
 		inc_pwr=int(args.test[4])
 		delay_time=int(args.test[5])
-		cur_note = start_note
 		cur_pwr = min_pwr
 
 		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
@@ -158,14 +158,8 @@ elif (args.test):
 		 	  ''.format(start_note, end_note, min_pwr, max_pwr,inc_pwr,delay_time))
 	elif len(args.test) == 4:
 		# -test [start_note] [end_note] [pwr] [delay_time]
-		write_file = open('test.py', 'w')
-		write_header(write_file)
-
-		start_note=int(args.test[0])
-		end_note=int(args.test[1])
 		pwr=int(args.test[2])
 		delay_time=int(args.test[3])
-		cur_note = start_note
 
 		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
@@ -176,12 +170,13 @@ elif (args.test):
 			write_note(write_file=write_file,timestamp=delay_time,event=2,note=cur_note,midipower=0, hold=True) 
 			cur_note = cur_note + 1
 
-		write_footer(write_file)
-
 		print ('\ntest.py file has been generated to play notes {0}-{1}'
 			  ' with power {2} and delay {3}ms'
 		 	  ''.format(start_note, end_note, pwr, delay_time))
 	else:
 		parser.print_help()
+
+	write_footer(write_file)
+
 else:
 	parser.print_help()
