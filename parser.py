@@ -8,7 +8,8 @@ def write_header(write_file):
 	write_file.write('import time\n')
 	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(const.COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
-	write_file.write('#<time,note,power>\n')
+	write_file.write('#<timestamp,event,note,midipower>\n')
+	write_file.write('ser.write(\'<0,3,0,0>\')\n')
 
 def write_note(write_file,timestamp,event,note,midipower,hold=False):
 	write_file.write('ser.write(\'<{},{},{},{}>\')\n'.format(timestamp,event,note,midipower))
