@@ -59,21 +59,6 @@ if(args.input_file):
 	avg_vol = sum_vol/num_of_notes
 	notes=filter(lambda x:x['action']=='NoteOn' or x['action']=='NoteOff' or x['action']=='Sustain',notes)
 
-	#Normalize all notes:
-	#	1. move tmax,tmin,notes,avg so that the avg is 0
-	#		a. tmax = tmax - tmin - (tmax-tmin) / 2 = tmax - tmin - tmax/2 + tmin/2 = tmax/2 - tmin/2 = (tmax-tmin)/2
-	#		b. tmin = tmin - tmin - (tmax-tmin) / 2 = tmin/2 - tmax/2 = (tmin-tmax)/2
-	#		c. note = note - avg
-	#	2. squeeze all notes so that 80% remain inside [tmin,tmax]
-	#		a. sort all NoteOn according to value and the 10% highest and 10% lowest
-	#		b. calculate the multiplier for 10% high to reach tmax and 10% min to reach tmin
-	#			- for note['val'] < 0 ====> note['val'] = tmin/notes[low10%]
-	#			- for note['val'] > 0 ====> note['val'] = tmax/notes[high10%] 
-	#		c. multiple all notes above 0 with (+)multiplier and all notes under zero with (-)multiplier
-	#	3. compress all peaky notes to tmax or tmin
-	#	4. bring them back with the desired tmax and tmin (by adding orig_tmax - tmax or something like that)
-	# 	5. apply preset profile of notes after this
-
 	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
 	for note in notes:
 		if note['action']=='NoteOn': note['val'] -= avg_vol
