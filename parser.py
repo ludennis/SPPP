@@ -17,11 +17,11 @@ def write_note(write_file,time,note,power,hold=False):
 	write_file.write('ser.readline()\n')
 
 def adjust_note_vol(note,avg):
-	note['val'] = int((note['val']-avg) * const.NOTE_SCALE[note['note']] + const.NOTE_OFFSET[note['note']] + avg)
+	note['midipower'] = int((note['midipower']-avg) * const.NOTE_SCALE[note['note']] + const.NOTE_OFFSET[note['note']] + avg)
 	return note
 
 def compress_note(note,tmax,tmin):
-	note['val'] = tmax if note['val'] > tmax else tmin
+	note['midipower'] = tmax if note['midipower'] > tmax else tmin
 	return note
 
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
@@ -56,63 +56,65 @@ if(args.input_file):
 
 
 	avg_vol = sum_vol/num_of_notes
-	notes=filter(lambda x:x['event']==1 or x['event']==2)
+	notes=filter(lambda x:x['event']==1 or x['event']==2,notes)
 
 	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
 	for note in notes:
-		if note['action']=='NoteOn': note['val'] -= avg_vol
+		if note['event']==1: note['midipower'] -= avg_vol
 
-	notes.sort(key=lambda x: (x['action'],x['val']))
+	notes.sort(key=lambda x: (x['event'],x['midipower']))
 
 	num_percent = num_of_notes / const.NUM_PERCENT
 	low_exp_power, high_exp_power = 0.0, 0.0
-	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn' and x['val'] < 0,notes)):
-		if index<num_percent: note['val'] = tmin;
+	for index, note in enumerate(filter(lambda x:x['event']==1 and x['midipower'] < 0,notes)):
+		if index<num_percent: note['midipower'] = tmin;
 		elif index==num_percent: 
-			low_exp_power = math.log(tmin/note['val']) if note['val']!=0 else 1
-		else: note['val'] = note['val'] * math.exp(low_exp_power)
+			low_exp_power = math.log(tmin/note['midipower']) if note['midipower']!=0 else 1
+		else: note['midipower'] = note['midipower'] * math.exp(low_exp_power)
 
-	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn' and x['val'] >= 0, reversed(notes))):
-		if index<num_percent: note['val'] = tmax;
+	for index, note in enumerate(filter(lambda x:x['event']==1 and x['midipower'] >= 0, reversed(notes))):
+		if index<num_percent: note['midipower'] = tmax;
 		elif index==num_percent: 
-			high_exp_power=math.log(tmax/note['val']) if note['val']!=0 else 1
-		else: note['val'] = note['val'] * math.exp(high_exp_power)
+			high_exp_power=math.log(tmax/note['midipower']) if note['midipower']!=0 else 1
+		else: note['midipower'] = note['midipower'] * math.exp(high_exp_power)
 
-	for index, note in enumerate(filter(lambda x:x['action']=='NoteOn', notes)):
-		note['val'] = int(note['val'] + const.TARGET_MAX - tmax)
+	for index, note in enumerate(filter(lambda x:x['event']==1, notes)):
+		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
 	# 1. cut the tail(end) of a note when it's immediately played again in 50ms 
 	#	 if diff(timestamp(NoteOff) - timestamp(NoteOn) < 50ms) then timestamp(NoteOff) - 50ms
 	# 2. adds hold note 
-	notes.sort(key=lambda x: (x['note'],x['time']))
+	notes.sort(key=lambda x: (x['note'],x['timestamp']))
 	for index,note in enumerate(notes):
 		if index<len(notes)-1:
-			if note['action'] == 'NoteOff' and note['note']==notes[index+1]['note']:
+			if note['event'] == 2 and note['note']==notes[index+1]['note']:
 				noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
-				if nextNoteOn['time'] - noteOff['time'] < const.TAIL_GAP_MSEC:
-					if nextNoteOn['time'] - const.TAIL_GAP_MSEC - noteOn['time'] < const.MIN_NOTE_DUR: 
-						noteOff['time'] = noteOn['time'] + const.MIN_NOTE_DUR
-					else: noteOff['time'] = nextNoteOn['time'] - const.TAIL_GAP_MSEC
-				if noteOff['time'] - noteOn['time'] < const.MIN_NOTE_DUR:
-					noteOff['time']=noteOn['time']+const.MIN_NOTE_DUR
-				if noteOff['time'] > nextNoteOn['time']:
-					noteOff['time']=nextNoteOn['time']
+				if nextNoteOn['timestamp'] - noteOff['timestamp'] < const.TAIL_GAP_MSEC:
+					if nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC - noteOn['timestamp'] < const.MIN_NOTE_DUR: 
+						noteOff['timestamp'] = noteOn['timestamp'] + const.MIN_NOTE_DUR
+					else: noteOff['timestamp'] = nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC
+				if noteOff['timestamp'] - noteOn['timestamp'] < const.MIN_NOTE_DUR:
+					noteOff['timestamp']=noteOn['timestamp']+const.MIN_NOTE_DUR
+				if noteOff['timestamp'] > nextNoteOn['timestamp']:
+					noteOff['timestamp']=nextNoteOn['timestamp']
 
 	for index, note in enumerate(notes):
 		if index<len(notes)-1:
-			if note['action'] == 'NoteOn' and note['val']!=const.HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
-				if notes[index+1]['time'] - note['time'] > const.MIN_NOTE_DUR:
-					notes.insert(index+1,{'time': note['time'] + const.HOLD_DELAY_POWER_START_MSEC,
+			if note['event'] == 1 and note['midipower']!=const.HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
+				if notes[index+1]['timestamp'] - note['timestamp'] > const.MIN_NOTE_DUR:
+					notes.insert(index+1,{'timestamp': note['timestamp'] + const.HOLD_DELAY_POWER_START_MSEC,
 										  'note': note['note'],
-										  'val': const.HOLD_DELAY_POWER,
-										  'action': 'NoteOn'})
+										  'midipower': const.HOLD_DELAY_POWER,
+										  'event': 1})
+
+	notes.sort(key=lambda x: (x['timestamp']))
 
 	#write files
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
 	write_header(write_file)
 	for note in notes:
-		write_note(write_file,time=note['time'],note=note['note'],power=note['val'])
+		write_note(write_file,time=note['timestamp'],note=note['note'],power=note['midipower'])
 	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
 elif (args.test):
