@@ -156,7 +156,7 @@ elif (args.test):
 			cur_note = cur_note + 1
 
 		print ('\ntest.py file has been generated to play from notes {0}'
-			  '-{1} with power {2} to {3} in increments of {4}'
+			  '-{1} with power {2} to {3} in increments of {4} '
 		 	  'delay {5}ms'
 		 	  ''.format(start_note, end_note, min_pwr, max_pwr,inc_pwr,delay_time))
 
