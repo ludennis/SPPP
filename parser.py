@@ -29,7 +29,7 @@ def compress_note(note,tmax,tmin):
 	return note
 
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
-parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [pwr] [delay_time] or -test [start_note] [end_note] [min_pwr] [max_pwr] [inc_pwr] [delay_time]')
+parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [delay_time] [pwr]  or -test [start_note] [end_note] [delay_time] [min_pwr] [max_pwr] [inc_pwr] ')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
 args = parser.parse_args()
 
@@ -130,7 +130,7 @@ elif (args.test):
 	cur_note = start_note
 
 	if len(args.test) == 6:
-		# -test [start_note] [end_note] [min_pwr] [max_pwr] [inc_pwr] [delay_time]
+		# -test [start_note] [end_note] [delay_time] [min_pwr] [max_pwr] [inc_pwr] 
 		min_pwr=int(args.test[2])
 		max_pwr=int(args.test[3])
 		inc_pwr=int(args.test[4])
@@ -161,7 +161,7 @@ elif (args.test):
 		 	  ''.format(start_note, end_note, min_pwr, max_pwr,inc_pwr,delay_time))
 
 	elif len(args.test) == 4:
-		# -test [start_note] [end_note] [pwr] [delay_time]
+		# -test [start_note] [end_note] [delay_time] [pwr] 
 		pwr=int(args.test[2])
 		delay_time=int(args.test[3])
 
