@@ -11,6 +11,9 @@ def write_header(write_file):
 	write_file.write('#<timestamp,event,note,midipower>\n')
 	write_file.write('ser.write(\'<0,3,0,0>\')\n')
 
+def write_footer(write_file):
+	write_file.write('ser.write(\'<0,4,0,0>\')\n')
+
 def write_note(write_file,timestamp,event,note,midipower,hold=False):
 	write_file.write('ser.write(\'<{},{},{},{}>\')\n'.format(timestamp,event,note,midipower))
 	if(hold==True and midipower > 3):
@@ -164,11 +167,15 @@ elif (args.test):
 		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
 
+
+
 		while cur_note <= end_note:
 			write_note(write_file=write_file,time=0,note=cur_note,vol=adjust_vol(pwr,cur_note,0 if args.target_average == None else args.target_average),hold=True)
 			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_note,adjust_vol(pwr,cur_note,0)))
 			write_note(write_file=write_file,time=delay_time,note=cur_note,pwr=0, hold=True) 
 			cur_note = cur_note + 1
+
+		write_footer(write_file)
 
 		print ('\ntest.py file has been generated to play notes {0}-{1}'
 			  ' with power {2} and delay {3}ms'
