@@ -73,7 +73,7 @@ if(args.input_file):
 		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
-	# cut tail 
+	# cut tail & min note dur
 	notes.sort(key=lambda x: (x['note'],x['timestamp']))
 	for index,note in enumerate(notes):
 		if index<len(notes)-1:
@@ -88,7 +88,7 @@ if(args.input_file):
 				if noteOff['timestamp'] > nextNoteOn['timestamp']:
 					noteOff['timestamp']=nextNoteOn['timestamp']
 
-	# minimum duration
+	# add hold delay
 	for index, note in enumerate(notes):
 		if index<len(notes)-1:
 			if note['event'] == 1 and note['midipower']!=const.HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
