@@ -73,6 +73,16 @@ if(args.input_file):
 		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
+	# add hold delay
+	for index, note in enumerate(notes):
+		if index<len(notes)-1:
+			if note['event'] == 1 and note['midipower']!=const.HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
+				if notes[index+1]['timestamp'] - note['timestamp'] > const.MIN_NOTE_DUR:
+					notes.insert(index+1,{'timestamp': note['timestamp'] + const.HOLD_DELAY_POWER_START_MSEC,
+										  'note': note['note'],
+										  'midipower': const.HOLD_DELAY_POWER,
+										  'event': 1})
+
 	# cut tail & min note dur
 	notes.sort(key=lambda x: (x['note'],x['timestamp']))
 	for index,note in enumerate(notes):
@@ -87,16 +97,6 @@ if(args.input_file):
 					noteOff['timestamp']=noteOn['timestamp']+const.MIN_NOTE_DUR
 				if noteOff['timestamp'] > nextNoteOn['timestamp']:
 					noteOff['timestamp']=nextNoteOn['timestamp']
-
-	# add hold delay
-	for index, note in enumerate(notes):
-		if index<len(notes)-1:
-			if note['event'] == 1 and note['midipower']!=const.HOLD_DELAY_POWER and note['note']==notes[index+1]['note']:
-				if notes[index+1]['timestamp'] - note['timestamp'] > const.MIN_NOTE_DUR:
-					notes.insert(index+1,{'timestamp': note['timestamp'] + const.HOLD_DELAY_POWER_START_MSEC,
-										  'note': note['note'],
-										  'midipower': const.HOLD_DELAY_POWER,
-										  'event': 1})
 
 	#write files
 	notes.sort(key=lambda x: (x['timestamp']))
