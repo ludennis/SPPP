@@ -16,6 +16,6 @@
 	note: default value is `--tmin=105` and `--tmax=180` if you don't specify
 
 ## TODO's
-- [] add version
-- [] to read straight from midi file
+- [ ] add version
+- [ ] to read straight from midi file
 
