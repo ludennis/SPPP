@@ -80,17 +80,32 @@ if(args.input_file):
 	notes.sort(key=lambda x: (x['note'],x['timestamp']))
 	for index,note in enumerate(notes):
 		if index<len(notes)-1:
-			if note['event'] == 2 and note['note']==notes[index+1]['note']:
+			if note['event'] == 0 and note['note']==notes[index+1]['note']:
 				noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
 				gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
+
 				if gapDuration < const.TAIL_GAP_MSEC:
+					print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
+
 					if nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC - noteOn['timestamp'] < const.MIN_NOTE_DUR: 
 						noteOff['timestamp'] = noteOn['timestamp'] + const.MIN_NOTE_DUR
-					else: noteOff['timestamp'] = nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC
+					else: 
+						if const.LONG_NOTE_DUR < noteDuration:
+							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.CUT_LONG_NOTE
+						elif const.SHORT_NOTE_DUR < noteDuration < const.LONG_NOTE_DUR:
+							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC * const.TAIL_GAP_MULTIPLIER #cut tail by percentage
+						else:
+							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.CUT_SHORT_NOTE
+
+					gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
+					print '-------------updated--------------------------'
+					print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
+
 				if noteDuration < const.MIN_NOTE_DUR:
 					noteOff['timestamp']=noteOn['timestamp']+const.MIN_NOTE_DUR
 				if noteOff['timestamp'] > nextNoteOn['timestamp']:
 					noteOff['timestamp']=nextNoteOn['timestamp']
+
 
 	# add hold delay
 	for index, note in enumerate(notes):
@@ -142,7 +157,7 @@ elif (args.test):
 												 midipower=cur_pwr)
 				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_note,cur_pwr))
 				write_note(write_file=write_file,timestamp=delay_time,
-												 event=2,
+												 event=0,
 												 note=cur_note,
 												 midipower=0)
 				cur_pwr = inc_pwr + cur_pwr
@@ -163,7 +178,7 @@ elif (args.test):
 		while cur_note <= end_note:
 			write_note(write_file=write_file,timestamp=0,event=1,note=cur_note,midipower=pwr,hold=True)
 			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_note,pwr))
-			write_note(write_file=write_file,timestamp=delay_time,event=2,note=cur_note,midipower=0, hold=True) 
+			write_note(write_file=write_file,timestamp=delay_time,event=0,note=cur_note,midipower=0, hold=True) 
 			cur_note = cur_note + 1
 
 		print ('\ntest.py file has been generated to play notes {0}-{1}'
