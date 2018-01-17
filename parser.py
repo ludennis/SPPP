@@ -73,6 +73,9 @@ if(args.input_file):
 		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
+
+	# Issue8 to cut tail according to note duration
+	
 	# cut tail & min note dur
 	notes.sort(key=lambda x: (x['note'],x['timestamp']))
 	for index,note in enumerate(notes):
