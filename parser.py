@@ -75,18 +75,19 @@ if(args.input_file):
 
 
 	# Issue8 to cut tail according to note duration
-	
+
 	# cut tail & min note dur
 	notes.sort(key=lambda x: (x['note'],x['timestamp']))
 	for index,note in enumerate(notes):
 		if index<len(notes)-1:
 			if note['event'] == 2 and note['note']==notes[index+1]['note']:
 				noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
-				if nextNoteOn['timestamp'] - noteOff['timestamp'] < const.TAIL_GAP_MSEC:
+				gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
+				if gapDuration < const.TAIL_GAP_MSEC:
 					if nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC - noteOn['timestamp'] < const.MIN_NOTE_DUR: 
 						noteOff['timestamp'] = noteOn['timestamp'] + const.MIN_NOTE_DUR
 					else: noteOff['timestamp'] = nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC
-				if noteOff['timestamp'] - noteOn['timestamp'] < const.MIN_NOTE_DUR:
+				if noteDuration < const.MIN_NOTE_DUR:
 					noteOff['timestamp']=noteOn['timestamp']+const.MIN_NOTE_DUR
 				if noteOff['timestamp'] > nextNoteOn['timestamp']:
 					noteOff['timestamp']=nextNoteOn['timestamp']
