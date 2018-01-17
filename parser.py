@@ -85,21 +85,20 @@ if(args.input_file):
 				gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
 
 				if gapDuration < const.TAIL_GAP_MSEC:
-					print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
-
+					# print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
 					if nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC - noteOn['timestamp'] < const.MIN_NOTE_DUR: 
 						noteOff['timestamp'] = noteOn['timestamp'] + const.MIN_NOTE_DUR
 					else: 
 						if const.LONG_NOTE_DUR < noteDuration:
 							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.CUT_LONG_NOTE
 						elif const.SHORT_NOTE_DUR < noteDuration < const.LONG_NOTE_DUR:
-							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC * const.TAIL_GAP_MULTIPLIER #cut tail by percentage
+							noteOff['timestamp'] = int(nextNoteOn['timestamp'] - noteDuration * const.TAIL_GAP_MULTIPLIER) #cut tail by percentage
 						else:
 							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.CUT_SHORT_NOTE
 
 					gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
-					print '-------------updated--------------------------'
-					print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
+					# print '-------------updated--------------------------'
+					# print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
 
 				if noteDuration < const.MIN_NOTE_DUR:
 					noteOff['timestamp']=noteOn['timestamp']+const.MIN_NOTE_DUR
