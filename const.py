@@ -8,16 +8,11 @@
 # SUSTAIN_NOTE => the note that a sustain will be used 
 # NOTE_SCALE => will multiply the value set to the corresponding note
 # NUM_PERCENT => number of percentage of notes to be outside of the TARGET_MAX and TARGET_MIN
-
-# TAIL_GAP_MSEC = 30
-# MIN_NOTE_DUR = 35
-# HOLD_DELAY_POWER_START_MSEC = 90
-# HOLD_DELAY_POWER = 75
-# COM_SERIAL = 'COM11'
-# SUSTAIN_NOTE = 150
-# TARGET_MAX = 152
-# TARGET_MIN = 135
-
+# LONG_NOTE_DUR => duration of a long note in ms
+# SHORT_NOTE_DUR => duration of a short note in ms
+# TAIL_GAP_MULTIPLIER => multiplier to be used in cutting note that is between short note and long note
+# CUT_LONG_NOTE => ms to cut a long note
+# CUT_SHORT_NOTE => ms to cut a short note
 
 TAIL_GAP_MSEC = 50
 MIN_NOTE_DUR = 30
