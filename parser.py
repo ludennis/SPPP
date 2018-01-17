@@ -95,8 +95,7 @@ if(args.input_file):
 							noteOff['timestamp'] = int(nextNoteOn['timestamp'] - noteDuration * const.TAIL_GAP_MULTIPLIER) #cut tail by percentage
 						else:
 							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.CUT_SHORT_NOTE
-
-					gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
+					# gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
 					# print '-------------updated--------------------------'
 					# print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
 
