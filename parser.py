@@ -43,8 +43,8 @@ if(args.input_file):
 
 	# read from txt and store into lists of <timestamp,event,note,midipower>
 	for line in read_file:		
-		timestamp,event,note,midipower=line.strip().split(',')
-		notes.append({'timestamp':int(timestamp),'event':int(event),'note':int(note),'midipower':int(midipower)})
+		timestamp,track,channel,event,note,midipower=line.strip().split(',')
+		notes.append({'timestamp':int(timestamp),'track':int(track),'channel':(channel),'event':int(event),'note':int(note),'midipower':int(midipower)})
 		if int(event) == 1:
 			num_of_notes+=1
 			sum_vol+=int(midipower)
