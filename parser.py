@@ -9,15 +9,15 @@ def write_header(write_file):
 	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(const.COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
 	write_file.write('#<timestamp,event,note,midipower>\n')
-	write_file.write('ser.write(\'<0,3,0,0>\')\n')
+	write_file.write('ser.write(\'<0,0,0,3,0,0>\')\n')
 
 def write_footer(write_file):
-	write_file.write('ser.write(\'<0,4,0,0>\')\n')
+	write_file.write('ser.write(\'<0,0,0,4,0,0>\')\n')
 
-def write_note(write_file,timestamp,event,note,midipower,hold=False):
-	write_file.write('ser.write(\'<{},{},{},{}>\')\n'.format(timestamp,event,note,midipower))
+def write_note(write_file,timestamp,track,channel,event,note,midipower,hold=False):
+	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp,track,channel,event,note,midipower))
 	if(hold==True and midipower > 3):
-		write_file.write('ser.write(\'<{},{},{},{}>\')\n'.format(timestamp + const.HOLD_DELAY_POWER_START_MSEC,event,note,const.HOLD_DELAY_POWER))
+		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp + const.HOLD_DELAY_POWER_START_MSEC,track,channel,event,note,const.HOLD_DELAY_POWER))
 	write_file.write('ser.readline()\n')
 
 def adjust_note_vol(note,avg):
@@ -107,6 +107,8 @@ if(args.input_file):
 	write_header(write_file)
 	for note in notes:
 		write_note(write_file,timestamp=note['timestamp'],
+							  track=note['track'],
+							  channel=note['channel'],
 							  event=note['event'],
 							  note=note['note'],
 							  midipower=note['midipower'])
@@ -136,11 +138,15 @@ elif (args.test):
 			cur_pwr = min_pwr
 			while cur_pwr <= max_pwr:
 				write_note(write_file=write_file,timestamp=0,
+												 track=0,
+												 channel=1,
 												 event=1,
 												 note=cur_note,
 												 midipower=cur_pwr)
 				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_note,cur_pwr))
 				write_note(write_file=write_file,timestamp=delay_time,
+												 track=0,
+												 channel=1,
 												 event=0,
 												 note=cur_note,
 												 midipower=0)
@@ -160,9 +166,21 @@ elif (args.test):
 			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
 
 		while cur_note <= end_note:
-			write_note(write_file=write_file,timestamp=0,event=1,note=cur_note,midipower=pwr,hold=True)
+			write_note(write_file=write_file,timestamp=0,
+											 track=0,
+											 channel=1,
+											 event=1,
+											 note=cur_note,
+											 midipower=pwr,
+											 hold=True)
 			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_note,pwr))
-			write_note(write_file=write_file,timestamp=delay_time,event=0,note=cur_note,midipower=0, hold=True) 
+			write_note(write_file=write_file,timestamp=delay_time,
+											 track=0,
+											 channel=1,
+											 event=0,
+											 note=cur_note,
+											 midipower=0,
+											 hold=True)
 			cur_note = cur_note + 1
 
 		print ('\ntest.py file has been generated to play notes {0}-{1}'
