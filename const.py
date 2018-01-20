@@ -1,4 +1,3 @@
-
 #CONSTANTS to tweak
 # TAIL_GAP_MSEC => Something to do with notes being played closed to each
 # MIN_NOTE_DUR => min time for a note to be playable
