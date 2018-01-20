@@ -2,7 +2,7 @@
 # TAIL_GAP_MSEC => Something to do with notes being played closed to each
 # MIN_NOTE_DUR => min time for a note to be playable
 # HOLD_DELAY_POWER_START_MSEC => time when solarnoid will start holding
-# HOLD_DELAY_POWER => power when the solarnoid is holding
+# HLD_DLY => power when the solarnoid is holding
 # COM_SERIAL => serial number when connecting to Arduino
 # SUSTAIN_NOTE => the note that a sustain will be used 
 # NOTE_SCALE => will multiply the value set to the corresponding note
@@ -17,6 +17,15 @@
 # TARGET_MAX = 152
 # TARGET_MIN = 135
 
+HLD_DLY = 85 #replaces HOLD_DELAY_POWER
+MIN_RELEASE_TIME = 40 #absolute smallest tailgap
+
+MULTIPLIER_SUGGESTED_DUR = 1.6
+MULTIPLIER_SUGGESTED_RELEASE_TIME = 4
+MULTIPLIER_SPLIT_RELEASE_TIME = .62
+
+SUGGESTED_RELEASE_TIME = MIN_RELEASE_TIME * MULTIPLIER_SUGGESTED_RELEASE_TIME
+SUGGESTED_DUR = HLD_DLY * MULTIPLIER_SUGGESTED_DUR
 
 TAIL_GAP_MSEC = 70
 MIN_NOTE_DUR = 200
