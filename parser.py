@@ -98,19 +98,6 @@ if(args.input_file):
 						# -check if there is any overcut, if there is overcut, reduce until 1ms apart.
 						if note_off['timestamp'] > next_note_on['timestamp']:
 							note_off['timestamp'] = next_note_on['timestamp'] - 1
-					# print 'note_on {} \nnote_off {} \nnext_note_on {} \ngap_dur {} \nnote_dur {} \n\n'.format(note_on,note_off,next_note_on,gap_dur,note_dur)
-					# if next_note_on['timestamp'] - const.TAIL_GAP_MSEC - note_on['timestamp'] < const.MIN_NOTE_DUR: 
-					# 	note_off['timestamp'] = note_on['timestamp'] + const.MIN_NOTE_DUR
-					# else: 
-					# 	if const.LONG_NOTE_DUR < note_dur:
-					# 		note_off['timestamp'] = next_note_on['timestamp'] - const.CUT_LONG_NOTE
-					# 	elif const.SHORT_NOTE_DUR < note_dur < const.LONG_NOTE_DUR:
-					# 		note_off['timestamp'] = int(next_note_on['timestamp'] - note_dur * const.TAIL_GAP_MULTIPLIER) #cut tail by percentage
-					# 	else:
-					# 		note_off['timestamp'] = next_note_on['timestamp'] - const.CUT_SHORT_NOTE
-					# gap_dur,note_dur = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
-					# print '-------------updated--------------------------'
-					# print 'note_on {} \nnote_off {} \nnext_note_on {} \ngap_dur {} \nnote_dur {} \n\n'.format(note_on,note_off,next_note_on,gap_dur,note_dur)
 
 # TODO:
 # -add hold delay to song	
