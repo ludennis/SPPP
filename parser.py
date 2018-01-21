@@ -51,43 +51,6 @@ if(args.input_file):
 
 	avg_vol = sum_vol/num_of_notes
 
-
-# TODO:
-# ______________
-
-# -find note_dur
-# if note_dur < suggested_dur
-# 	note_dur = suggested_dur
-# 	-if overlap, reduce increase until there is a 1ms gap. Run this for the entire song FIRST.
-
-# _______________
-	
-# -find gap
-# if gap < suggested_release_time
-# 	small_gap = gap
-	
-# 	find note_dur
-
-# 	if note_dur > suggested_dur + small_gap
-# 		note_dur = note_dur - small_gap
-	
-# 	if note_dur < suggested_dur + small_gap
-# 		small_release_time = (small_gap + note_dur) * multiplier_split_release_time
-# 		small_note_dur = (small_gap + note_dur) - small_release_time
-# 		-set note_dur = small_note_dur
-# 		-set gap = small_release_time
-
-	
-# 	if small_release_time < min_release_time
-# 		small_release_time = min_release_time
-		
-# 		-check if there is any overcut, if there is overcut, reduce until 1ms apart.
-
-# _______________
-
-# -add hold delay to song	
-
-
 	# normalize all notes
 	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
 	for note in notes:
@@ -110,6 +73,12 @@ if(args.input_file):
 		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
+
+
+# TODO:
+
+# -add hold delay to song	
+
 	# cut tail & min note dur
 	notes.sort(key=lambda x: (x['note'],x['timestamp']))
 	for index,note in enumerate(notes):
@@ -117,6 +86,36 @@ if(args.input_file):
 			if note['event'] == 0 and note['note']==notes[index+1]['note']:
 				noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
 				gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
+
+				if noteDuration < const.SUGGESTED_DUR:
+					noteOff['timestamp'] = noteOn['timestamp'] + SUGGESTED_DUR
+					#if overlap, reduce increase until there is a 1 ms gap. run this for the entire song first
+					if noteOff['timestamp'] > nextNoteOn['timestamp']: noteOff['timestamp'] = nextNoteOn['timestamp'] - 1
+
+
+				# -find gap
+				# if gap < suggested_release_time
+				# 	small_gap = gap
+					
+				# 	find note_dur
+
+				# 	if note_dur > suggested_dur + small_gap
+				# 		note_dur = note_dur - small_gap
+					
+				# 	if note_dur < suggested_dur + small_gap
+				# 		small_release_time = (small_gap + note_dur) * multiplier_split_release_time
+				# 		small_note_dur = (small_gap + note_dur) - small_release_time
+				# 		-set note_dur = small_note_dur
+				# 			if small_release_time < min_release_time
+				# 			small_release_time = min_release_time
+				# 		    -set gap = small_release_time
+
+					
+				#
+						
+				# 		-check if there is any overcut, if there is overcut, reduce until 1ms apart.
+
+				# _______________
 
 				if gapDuration < const.TAIL_GAP_MSEC:
 					# print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
