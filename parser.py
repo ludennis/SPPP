@@ -51,6 +51,43 @@ if(args.input_file):
 
 	avg_vol = sum_vol/num_of_notes
 
+
+# TODO:
+# ______________
+
+# -find note_dur
+# if note_dur < suggested_dur
+# 	note_dur = suggested_dur
+# 	-if overlap, reduce increase until there is a 1ms gap. Run this for the entire song FIRST.
+
+# _______________
+	
+# -find gap
+# if gap < suggested_release_time
+# 	small_gap = gap
+	
+# 	find note_dur
+
+# 	if note_dur > suggested_dur + small_gap
+# 		note_dur = note_dur - small_gap
+	
+# 	if note_dur < suggested_dur + small_gap
+# 		small_release_time = (small_gap + note_dur) * multiplier_split_release_time
+# 		small_note_dur = (small_gap + note_dur) - small_release_time
+# 		-set note_dur = small_note_dur
+# 		-set gap = small_release_time
+
+	
+# 	if small_release_time < min_release_time
+# 		small_release_time = min_release_time
+		
+# 		-check if there is any overcut, if there is overcut, reduce until 1ms apart.
+
+# _______________
+
+# -add hold delay to song	
+
+
 	# normalize all notes
 	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
 	for note in notes:
