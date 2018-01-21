@@ -1,5 +1,5 @@
 #CONSTANTS to tweak
-# TAIL_GAP_MSEC => Something to do with notes being played closed to each
+# TAIL_GAP_MSEC => The time span of the gap to exist in between 2 consecutive notes
 # MIN_NOTE_DUR => min time for a note to be playable
 # HOLD_DELAY_POWER_START_MSEC => time when solarnoid will start holding
 # HLD_DLY => power when the solarnoid is holding
