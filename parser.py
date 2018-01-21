@@ -16,9 +16,11 @@ def write_footer(write_file):
 
 def write_note(write_file,timestamp,track,channel,event,note,midipower,hold=False):
 	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp,track,channel,event,note,midipower))
-	if(hold==True and midipower > 3):
-		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp + const.HOLD_DELAY_POWER_START_MSEC,track,channel,event,note,const.HOLD_DELAY_POWER))
 	write_file.write('ser.readline()\n')
+	if(hold==True and event == 1):
+		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp + const.HLD_DLY,track,channel,event,note,const.HLD_DLY_PWR))
+		write_file.write('ser.readline()\n')
+	
 
 def adjust_note_vol(note,avg):
 	note['midipower'] = int((note['midipower']-avg) * const.NOTE_SCALE[note['note']] + const.NOTE_OFFSET[note['note']] + avg)
@@ -68,38 +70,41 @@ if(args.input_file):
 		elif index==num_percent: 
 			high_exp_power=tmax/note['midipower'] if note['midipower']!=0 else 1
 		else: note['midipower'] = note['midipower'] * high_linear_power
-
 	for index, note in enumerate(filter(lambda x:x['event']==1, notes)):
 		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
 	# cut tail & min note dur
-	notes.sort(key=lambda x: (x['note'],x['timestamp']))
+	notes.sort(key=lambda x: (x['note'],x['timestamp'],x['track'],x['channel']))
 	for index,note in enumerate(notes):
 		if index<len(notes)-1:
 			if note['event'] == 0 and note['note']==notes[index+1]['note']:
-				noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
-				gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
-
-				if gapDuration < const.TAIL_GAP_MSEC:
-					# print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
-					if nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC - noteOn['timestamp'] < const.MIN_NOTE_DUR: 
-						noteOff['timestamp'] = noteOn['timestamp'] + const.MIN_NOTE_DUR
-					else: 
-						if const.LONG_NOTE_DUR < noteDuration:
-							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.CUT_LONG_NOTE
-						elif const.SHORT_NOTE_DUR < noteDuration < const.LONG_NOTE_DUR:
-							noteOff['timestamp'] = int(nextNoteOn['timestamp'] - noteDuration * const.TAIL_GAP_MULTIPLIER) #cut tail by percentage
-						else:
-							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.CUT_SHORT_NOTE
-					# gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
-					# print '-------------updated--------------------------'
-					# print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
-
-				if noteDuration < const.MIN_NOTE_DUR:
-					noteOff['timestamp']=noteOn['timestamp']+const.MIN_NOTE_DUR
-				if noteOff['timestamp'] > nextNoteOn['timestamp']:
-					noteOff['timestamp']=nextNoteOn['timestamp']
+				note_on,note_off,next_note_on = notes[index-1], note, notes[index+1]
+				gap_dur,note_dur = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
+				if note_dur < const.SUGGESTED_DUR:
+					note_off['timestamp'] = note_on['timestamp'] + const.SUGGESTED_DUR
+					#if overlap, reduce increase until there is a 1 ms gap. run this for the entire song first
+					if note_off['timestamp'] > next_note_on['timestamp']: note_off['timestamp'] = next_note_on['timestamp'] - 1
+				if gap_dur < const.SUGGESTED_RELEASE_TIME:
+					if note_dur > const.SUGGESTED_DUR + gap_dur:
+						note_off['timestamp'] = note_off['timestamp'] - gap_dur
+					else:
+						note_off['timestamp'] = (gap_dur + note_dur) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME)
+						small_release_time = (gap_dur + note_dur) * const.MULTIPLIER_SPLIT_RELEASE_TIME
+						if small_release_time < const.MIN_RELEASE_TIME:
+							# -set gap = small_release_time
+							note_off['timestamp'] = next_note_on['timestamp'] - small_release_time
+						# -check if there is any overcut, if there is overcut, reduce until 1ms apart.
+						if note_off['timestamp'] > next_note_on['timestamp']:
+							note_off['timestamp'] = next_note_on['timestamp'] - 1
+				#add hold delay if note is long enough
+				if note_dur > const.HLD_DLY and note_on['midipower'] != const.HLD_DLY_PWR and note_on['event']==1:
+					notes.append({'timestamp':note_on['timestamp']+const.HLD_DLY,
+								  'track':note_on['track'],
+								  'channel':note_on['channel'],
+								  'event':1,
+								  'note':note_on['note'],
+								  'midipower':const.HLD_DLY_PWR})
 
 	#write files
 	notes.sort(key=lambda x: (x['timestamp']))
@@ -131,8 +136,8 @@ elif (args.test):
 		inc_pwr=int(args.test[5])
 		cur_pwr = min_pwr
 
-		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
-			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
+		if(delay_time<const.HLD_DLY):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HLD_DLY)
 
 		while cur_note <= end_note:
 			cur_pwr = min_pwr
@@ -162,8 +167,8 @@ elif (args.test):
 	elif len(args.test) == 4:
 		pwr=int(args.test[3])
 
-		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
-			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
+		if(delay_time<const.HLD_DLY):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HLD_DLY)
 
 		while cur_note <= end_note:
 			write_note(write_file=write_file,timestamp=0,

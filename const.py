@@ -1,15 +1,13 @@
-
 #CONSTANTS to tweak
 # TAIL_GAP_MSEC => Something to do with notes being played closed to each
 # MIN_NOTE_DUR => min time for a note to be playable
 # HOLD_DELAY_POWER_START_MSEC => time when solarnoid will start holding
-# HOLD_DELAY_POWER => power when the solarnoid is holding
+# HLD_DLY => power when the solarnoid is holding
 # COM_SERIAL => serial number when connecting to Arduino
 # SUSTAIN_NOTE => the note that a sustain will be used 
 # NOTE_SCALE => will multiply the value set to the corresponding note
 # NUM_PERCENT => number of percentage of notes to be outside of the TARGET_MAX and TARGET_MIN
 
-# TAIL_GAP_MSEC = 30
 # MIN_NOTE_DUR = 35
 # HOLD_DELAY_POWER_START_MSEC = 90
 # HOLD_DELAY_POWER = 75
@@ -18,21 +16,22 @@
 # TARGET_MAX = 152
 # TARGET_MIN = 135
 
+HLD_DLY = 85 #replaces HOLD_DELAY_POWER_START_MSEC
+HLD_DLY_PWR = 65
+MIN_RELEASE_TIME = 40 #absolute smallest tailgap
 
-TAIL_GAP_MSEC = 70
-MIN_NOTE_DUR = 200
-HOLD_DELAY_POWER_START_MSEC = 90
-HOLD_DELAY_POWER = 65
+MULTIPLIER_SUGGESTED_DUR = 1.6
+MULTIPLIER_SUGGESTED_RELEASE_TIME = 4
+MULTIPLIER_SPLIT_RELEASE_TIME = .62
+
+SUGGESTED_RELEASE_TIME = MIN_RELEASE_TIME * MULTIPLIER_SUGGESTED_RELEASE_TIME
+SUGGESTED_DUR = HLD_DLY * MULTIPLIER_SUGGESTED_DUR
+
 COM_SERIAL = 'COM3'
 SUSTAIN_NOTE = 150
 TARGET_MAX = 155
 TARGET_MIN = 146
 NUM_PERCENT = 5
-LONG_NOTE_DUR = 500
-SHORT_NOTE_DUR = 100
-TAIL_GAP_MULTIPLIER = .4
-CUT_LONG_NOTE = 150
-CUT_SHORT_NOTE = 40
 
 
 NOTE_SCALE = [0, 
