@@ -17,7 +17,7 @@ def write_footer(write_file):
 def write_note(write_file,timestamp,track,channel,event,note,midipower,hold=False):
 	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp,track,channel,event,note,midipower))
 	if(hold==True and midipower > 3):
-		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp + const.HOLD_DELAY_POWER_START_MSEC,track,channel,event,note,const.HOLD_DELAY_POWER))
+		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp + const.HLD_DLY,track,channel,event,note,const.HLD_DLY_PWR))
 	write_file.write('ser.readline()\n')
 
 def adjust_note_vol(note,avg):
@@ -99,8 +99,6 @@ if(args.input_file):
 						if note_off['timestamp'] > next_note_on['timestamp']:
 							note_off['timestamp'] = next_note_on['timestamp'] - 1
 					# print 'note_on {} \nnote_off {} \nnext_note_on {} \ngap_dur {} \nnote_dur {} \n\n'.format(note_on,note_off,next_note_on,gap_dur,note_dur)
-					
-
 					# if next_note_on['timestamp'] - const.TAIL_GAP_MSEC - note_on['timestamp'] < const.MIN_NOTE_DUR: 
 					# 	note_off['timestamp'] = note_on['timestamp'] + const.MIN_NOTE_DUR
 					# else: 
@@ -147,8 +145,8 @@ elif (args.test):
 		inc_pwr=int(args.test[5])
 		cur_pwr = min_pwr
 
-		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
-			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
+		if(delay_time<const.HLD_DLY):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HLD_DLY)
 
 		while cur_note <= end_note:
 			cur_pwr = min_pwr
@@ -178,8 +176,8 @@ elif (args.test):
 	elif len(args.test) == 4:
 		pwr=int(args.test[3])
 
-		if(delay_time<const.HOLD_DELAY_POWER_START_MSEC):
-			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HOLD_DELAY_POWER_START_MSEC)
+		if(delay_time<const.HLD_DLY):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HLD_DLY)
 
 		while cur_note <= end_note:
 			write_note(write_file=write_file,timestamp=0,
