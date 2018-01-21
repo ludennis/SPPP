@@ -73,38 +73,32 @@ if(args.input_file):
 		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
-
-
-# TODO:
-
-
 	# cut tail & min note dur
 	notes.sort(key=lambda x: (x['note'],x['timestamp']))
 	for index,note in enumerate(notes):
 		if index<len(notes)-1:
 			if note['event'] == 0 and note['note']==notes[index+1]['note']:
 				note_on,note_off,next_note_on = notes[index-1], note, notes[index+1]
-				gap_duration,note_dur = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
+				gap_dur,note_dur = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
 
 				if note_dur < const.SUGGESTED_DUR:
 					note_off['timestamp'] = note_on['timestamp'] + const.SUGGESTED_DUR
 					#if overlap, reduce increase until there is a 1 ms gap. run this for the entire song first
 					if note_off['timestamp'] > next_note_on['timestamp']: note_off['timestamp'] = next_note_on['timestamp'] - 1
 
-
-				if gap_duration < const.SUGGESTED_RELEASE_TIME:
-					if note_dur > const.SUGGESTED_DUR + gap_duration:
-						note_off['timestamp'] = note_off['timestamp'] - gap_duration
+				if gap_dur < const.SUGGESTED_RELEASE_TIME:
+					if note_dur > const.SUGGESTED_DUR + gap_dur:
+						note_off['timestamp'] = note_off['timestamp'] - gap_dur
 					else:
-						note_off['timestamp'] = (gap_duration + note_dur) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME)
-						small_release_time = (gap_duration + note_dur) * const.MULTIPLIER_SPLIT_RELEASE_TIME
+						note_off['timestamp'] = (gap_dur + note_dur) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME)
+						small_release_time = (gap_dur + note_dur) * const.MULTIPLIER_SPLIT_RELEASE_TIME
 						if small_release_time < const.MIN_RELEASE_TIME:
 							# -set gap = small_release_time
 							note_off['timestamp'] = next_note_on['timestamp'] - small_release_time
 						# -check if there is any overcut, if there is overcut, reduce until 1ms apart.
 						if note_off['timestamp'] > next_note_on['timestamp']:
 							note_off['timestamp'] = next_note_on['timestamp'] - 1
-					# print 'note_on {} \nnote_off {} \nnext_note_on {} \ngap_duration {} \nnote_dur {} \n\n'.format(note_on,note_off,next_note_on,gap_duration,note_dur)
+					# print 'note_on {} \nnote_off {} \nnext_note_on {} \ngap_dur {} \nnote_dur {} \n\n'.format(note_on,note_off,next_note_on,gap_dur,note_dur)
 					
 
 					# if next_note_on['timestamp'] - const.TAIL_GAP_MSEC - note_on['timestamp'] < const.MIN_NOTE_DUR: 
@@ -116,13 +110,12 @@ if(args.input_file):
 					# 		note_off['timestamp'] = int(next_note_on['timestamp'] - note_dur * const.TAIL_GAP_MULTIPLIER) #cut tail by percentage
 					# 	else:
 					# 		note_off['timestamp'] = next_note_on['timestamp'] - const.CUT_SHORT_NOTE
-					# gap_duration,note_dur = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
+					# gap_dur,note_dur = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
 					# print '-------------updated--------------------------'
-					# print 'note_on {} \nnote_off {} \nnext_note_on {} \ngap_duration {} \nnote_dur {} \n\n'.format(note_on,note_off,next_note_on,gap_duration,note_dur)
+					# print 'note_on {} \nnote_off {} \nnext_note_on {} \ngap_dur {} \nnote_dur {} \n\n'.format(note_on,note_off,next_note_on,gap_dur,note_dur)
 
-
+# TODO:
 # -add hold delay to song	
-
 
 	#write files
 	notes.sort(key=lambda x: (x['timestamp']))
