@@ -70,24 +70,21 @@ if(args.input_file):
 		elif index==num_percent: 
 			high_exp_power=tmax/note['midipower'] if note['midipower']!=0 else 1
 		else: note['midipower'] = note['midipower'] * high_linear_power
-
 	for index, note in enumerate(filter(lambda x:x['event']==1, notes)):
 		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
 	# cut tail & min note dur
-	notes.sort(key=lambda x: (x['note'],x['timestamp']))
+	notes.sort(key=lambda x: (x['note'],x['timestamp'],x['track'],x['channel']))
 	for index,note in enumerate(notes):
 		if index<len(notes)-1:
 			if note['event'] == 0 and note['note']==notes[index+1]['note']:
 				note_on,note_off,next_note_on = notes[index-1], note, notes[index+1]
 				gap_dur,note_dur = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
-
 				if note_dur < const.SUGGESTED_DUR:
 					note_off['timestamp'] = note_on['timestamp'] + const.SUGGESTED_DUR
 					#if overlap, reduce increase until there is a 1 ms gap. run this for the entire song first
 					if note_off['timestamp'] > next_note_on['timestamp']: note_off['timestamp'] = next_note_on['timestamp'] - 1
-
 				if gap_dur < const.SUGGESTED_RELEASE_TIME:
 					if note_dur > const.SUGGESTED_DUR + gap_dur:
 						note_off['timestamp'] = note_off['timestamp'] - gap_dur
@@ -100,9 +97,14 @@ if(args.input_file):
 						# -check if there is any overcut, if there is overcut, reduce until 1ms apart.
 						if note_off['timestamp'] > next_note_on['timestamp']:
 							note_off['timestamp'] = next_note_on['timestamp'] - 1
-
-# TODO:
-# -add hold delay to song	
+				#add hold delay if note is long enough
+				if note_dur > const.HLD_DLY and note_on['midipower'] != const.HLD_DLY_PWR and note_on['event']==1:
+					notes.append({'timestamp':note_on['timestamp']+const.HLD_DLY,
+								  'track':note_on['track'],
+								  'channel':note_on['channel'],
+								  'event':1,
+								  'note':note_on['note'],
+								  'midipower':const.HLD_DLY_PWR})
 
 	#write files
 	notes.sort(key=lambda x: (x['timestamp']))
