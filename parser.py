@@ -84,13 +84,13 @@ if(args.input_file):
 	for index,note in enumerate(notes):
 		if index<len(notes)-1:
 			if note['event'] == 0 and note['note']==notes[index+1]['note']:
-				noteOn,noteOff,nextNoteOn = notes[index-1], note, notes[index+1]
-				gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
+				note_on,note_off,next_note_on = notes[index-1], note, notes[index+1]
+				gap_duration,note_duration = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
 
-				if noteDuration < const.SUGGESTED_DUR:
-					noteOff['timestamp'] = noteOn['timestamp'] + SUGGESTED_DUR
+				if note_duration < const.SUGGESTED_DUR:
+					note_off['timestamp'] = note_on['timestamp'] + SUGGESTED_DUR
 					#if overlap, reduce increase until there is a 1 ms gap. run this for the entire song first
-					if noteOff['timestamp'] > nextNoteOn['timestamp']: noteOff['timestamp'] = nextNoteOn['timestamp'] - 1
+					if note_off['timestamp'] > next_note_on['timestamp']: note_off['timestamp'] = next_note_on['timestamp'] - 1
 
 
 				# -find gap
@@ -109,33 +109,23 @@ if(args.input_file):
 				# 			if small_release_time < min_release_time
 				# 			small_release_time = min_release_time
 				# 		    -set gap = small_release_time
-
-					
-				#
-						
 				# 		-check if there is any overcut, if there is overcut, reduce until 1ms apart.
 
-				# _______________
-
-				if gapDuration < const.TAIL_GAP_MSEC:
-					# print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
-					if nextNoteOn['timestamp'] - const.TAIL_GAP_MSEC - noteOn['timestamp'] < const.MIN_NOTE_DUR: 
-						noteOff['timestamp'] = noteOn['timestamp'] + const.MIN_NOTE_DUR
+				if gap_duration < const.SUGGESTED_RELEASE_TIME:
+					if note_duration > SUGGESTED_DUR + gap_duration
+					# print 'note_on {} \nnote_off {} \nnext_note_on {} \ngap_duration {} \nnote_duration {} \n\n'.format(note_on,note_off,next_note_on,gap_duration,note_duration)
+					if next_note_on['timestamp'] - const.TAIL_GAP_MSEC - note_on['timestamp'] < const.MIN_NOTE_DUR: 
+						note_off['timestamp'] = note_on['timestamp'] + const.MIN_NOTE_DUR
 					else: 
-						if const.LONG_NOTE_DUR < noteDuration:
-							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.CUT_LONG_NOTE
-						elif const.SHORT_NOTE_DUR < noteDuration < const.LONG_NOTE_DUR:
-							noteOff['timestamp'] = int(nextNoteOn['timestamp'] - noteDuration * const.TAIL_GAP_MULTIPLIER) #cut tail by percentage
+						if const.LONG_NOTE_DUR < note_duration:
+							note_off['timestamp'] = next_note_on['timestamp'] - const.CUT_LONG_NOTE
+						elif const.SHORT_NOTE_DUR < note_duration < const.LONG_NOTE_DUR:
+							note_off['timestamp'] = int(next_note_on['timestamp'] - note_duration * const.TAIL_GAP_MULTIPLIER) #cut tail by percentage
 						else:
-							noteOff['timestamp'] = nextNoteOn['timestamp'] - const.CUT_SHORT_NOTE
-					# gapDuration,noteDuration = nextNoteOn['timestamp']-noteOff['timestamp'],noteOff['timestamp']-noteOn['timestamp']
+							note_off['timestamp'] = next_note_on['timestamp'] - const.CUT_SHORT_NOTE
+					# gap_duration,note_duration = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
 					# print '-------------updated--------------------------'
-					# print 'noteOn {} \nnoteOff {} \nnextNoteOn {} \ngapDuration {} \nnoteDuration {} \n\n'.format(noteOn,noteOff,nextNoteOn,gapDuration,noteDuration)
-
-				if noteDuration < const.MIN_NOTE_DUR:
-					noteOff['timestamp']=noteOn['timestamp']+const.MIN_NOTE_DUR
-				if noteOff['timestamp'] > nextNoteOn['timestamp']:
-					noteOff['timestamp']=nextNoteOn['timestamp']
+					# print 'note_on {} \nnote_off {} \nnext_note_on {} \ngap_duration {} \nnote_duration {} \n\n'.format(note_on,note_off,next_note_on,gap_duration,note_duration)
 
 	#write files
 	notes.sort(key=lambda x: (x['timestamp']))
