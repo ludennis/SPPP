@@ -16,9 +16,11 @@ def write_footer(write_file):
 
 def write_note(write_file,timestamp,track,channel,event,note,midipower,hold=False):
 	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp,track,channel,event,note,midipower))
-	if(hold==True and midipower > 3):
-		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp + const.HLD_DLY,track,channel,event,note,const.HLD_DLY_PWR))
 	write_file.write('ser.readline()\n')
+	if(hold==True and event == 1):
+		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp + const.HLD_DLY,track,channel,event,note,const.HLD_DLY_PWR))
+		write_file.write('ser.readline()\n')
+	
 
 def adjust_note_vol(note,avg):
 	note['midipower'] = int((note['midipower']-avg) * const.NOTE_SCALE[note['note']] + const.NOTE_OFFSET[note['note']] + avg)
