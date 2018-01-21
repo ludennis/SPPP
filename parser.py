@@ -95,25 +95,23 @@ if(args.input_file):
 
 				# -find gap
 				# if gap < suggested_release_time
-				# 	small_gap = gap
 					
 				# 	find note_dur
 
-				# 	if note_dur > suggested_dur + small_gap
-				# 		note_dur = note_dur - small_gap
-					
-				# 	if note_dur < suggested_dur + small_gap
-				# 		small_release_time = (small_gap + note_dur) * multiplier_split_release_time
-				# 		small_note_dur = (small_gap + note_dur) - small_release_time
-				# 		-set note_dur = small_note_dur
-				# 			if small_release_time < min_release_time
-				# 			small_release_time = min_release_time
+				# 	if note_dur > suggested_dur +gap
+				# 		note_dur = note_dur - gap
+				# 	else note_dur < suggested_dur + gap
+				# 		-set note_dur = (gap + note_dur) * (1 - MSRT)
+				#		small_release_time = (gap + note_dur) * multiplier_split_release_time
+				# 		if small_release_time < min_release_time
 				# 		    -set gap = small_release_time
 				# 		-check if there is any overcut, if there is overcut, reduce until 1ms apart.
 
 				if gap_duration < const.SUGGESTED_RELEASE_TIME:
 					if note_dur > const.SUGGESTED_DUR + gap_duration:
-						break
+						note_off['timestamp'] = note_off['timestamp'] - gap_duration
+					else:
+
 					# print 'note_on {} \nnote_off {} \nnext_note_on {} \ngap_duration {} \nnote_dur {} \n\n'.format(note_on,note_off,next_note_on,gap_duration,note_dur)
 					if next_note_on['timestamp'] - const.TAIL_GAP_MSEC - note_on['timestamp'] < const.MIN_NOTE_DUR: 
 						note_off['timestamp'] = note_on['timestamp'] + const.MIN_NOTE_DUR
