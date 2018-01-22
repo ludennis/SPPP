@@ -15,10 +15,10 @@ def write_footer(write_file):
 	write_file.write('ser.write(\'<0,0,0,7,0,0>\')\n')
 
 def write_note(write_file,timestamp,track,channel,event,note,midipower,hold=False):
-	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp,track,channel,event,note,midipower))
+	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp),track,channel,event,note,midipower))
 	write_file.write('ser.readline()\n')
 	if(hold==True and event == 1):
-		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(timestamp + const.HLD_DLY,track,channel,event,note,const.HLD_DLY_PWR))
+		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp + const.HLD_DLY),track,channel,event,note,const.HLD_DLY_PWR))
 		write_file.write('ser.readline()\n')
 	
 
