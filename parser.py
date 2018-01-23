@@ -31,6 +31,31 @@ def compress_note(note,tmax,tmin):
 	note['power'] = tmax if note['power'] > tmax else tmin
 	return note
 
+def implode_notes(self):
+	imploded_list = []
+	for note in self:
+		imploded_list.append({'timestamp':int(note.note_on),
+							  'track':int(note.track),
+							  'channel':(note.channel),
+							  'event':int(1),
+							  'note':int(note.key),
+							  'power':int(note.power)})
+		imploded_list.append({'timestamp':int(note.note_off),
+							  'track':int(note.track),
+							  'channel':(note.channel),
+							  'event':int(0),
+							  'note':int(note.key),
+							  'power':int(note.power)})
+		if note.hold_delay != None:
+			imploded_list.append({'timestamp':int(note.note_on+const.HLD_DLY),
+								  'track':int(note.track),
+								  'channel':(note.channel),
+								  'event':int(1),
+								  'note':int(note.key),
+								  'power':int(const.HLD_DLY_PWR)})
+	return imploded_list
+
+
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
 parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [delay_time] [pwr]  or -test [start_note] [end_note] [delay_time] [min_pwr] [max_pwr] [inc_pwr] ')
 parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
@@ -121,43 +146,11 @@ if(args.input_file):
 			if note.get_dur() > const.HLD_DLY and note.power != const.HLD_DLY_PWR:
 				note.hold_delay=1
 
-
-notes.append({'timestamp':int(timestamp),
-			  'track':int(track),
-			  'channel':(channel),
-			  'event':int(event),
-			  'note':int(note),
-			  'power':int(power)})
-
-def implode_notes(self):
-	imploded_list = []
-	for note in self:
-		imploded_list.append({'timestamp':int(note.note_on),
-							  'track':int(note.track),
-							  'channel':(note.channel),
-							  'event':int(1),
-							  'note':int(note.key),
-							  'power':int(note.power)})
-		imploded_list.append({'timestamp':int(note.note_off),
-							  'track':int(note.track),
-							  'channel':(note.channel),
-							  'event':int(0),
-							  'note':int(note.key),
-							  'power':int(note.power)})
-		if note.hold_delay != None:
-			imploded_list.append({'timestamp':int(note.note_on+const.HLD_DLY),
-								  'track':int(note.track),
-								  'channel':(note.channel),
-								  'event':int(1),
-								  'note':int(note.key),
-								  'power':int(const.HLD_DLY_PWR)})
-	return imploded_list
-
-	notes_copy = notes_copy.implode_notes()
+	notes_copy = implode_notes(notes_copy)
 	for note in notes_copy:
 		print note
 	#write files
-	notes_copy.sort(key=lambda x: (x['note_on']))
+	notes_copy.sort(key=lambda x: (x['timestamp']))
 
 	print "after sort-------------------------"
 
@@ -167,25 +160,12 @@ def implode_notes(self):
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
 	write_header(write_file)
 	for note in notes_copy:
-		write_note(write_file,timestamp=note.note_on,
-							  track=note.track,
-							  channel=note.channel,
-							  event=1,
-							  note=note.key,
-							  power=note.power)
-		# if note.hold_delay != None:
-		# 	write_note(write_file,timestamp=note.note_on + const.HLD_DLY,
-		# 						  track=note.track,
-		# 						  channel=note.channel,
-		# 						  event=1,
-		# 						  note=note.key,
-		# 						  power=note.power)
-		write_note(write_file,timestamp=note.note_off,
-							  track=note.track,
-							  channel=note.channel,
-							  event=0,
-							  note=note.key,
-							  power=note.power)
+		write_note(write_file,timestamp=note['timestamp'],
+							  track=note['track'],
+							  channel=note['channel'],
+							  event=note['event'],
+							  note=note['note'],
+							  power=note['power'])
 	write_footer(write_file)
 	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
