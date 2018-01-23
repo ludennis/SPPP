@@ -79,50 +79,81 @@ if(args.input_file):
 	notes.sort(key=lambda x: (x['note'],x['timestamp'],x['track'],x['channel']))
 
 	# now the notes should be aligned together to be stored as notes
-
+	notes_copy = []
 	for index,note in enumerate(notes):
-		if index<len(notes)-2:
-			
+		if note['event'] == 1:
+			note_on = note['timestamp']
+			note_off = notes[index+1]['timestamp']
+			key = note['note']
+			power = note['power']
+			track = note['track']
+			channel = note['channel']
+			notes_copy.append(Note(note_on=note['timestamp'],
+								   note_off=notes[index+1]['timestamp'],
+								   key=note['note'],
+								   power=note['power'],
+								   track=note['track'],
+								   channel=note['channel']))
 
-			if note['event'] == 1 and note['note']==notes[index+1]['note']:
-				note_on,note_off,next_note_on = notes[index-1], note, notes[index+1]
-				gap_dur,note_dur = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
-				if note_dur < const.SUGGESTED_DUR:
-					note_off['timestamp'] = note_on['timestamp'] + const.SUGGESTED_DUR
-					#if overlap, reduce increase until there is a 1 ms gap. run this for the entire song first
-					if note_off['timestamp'] > next_note_on['timestamp']: note_off['timestamp'] = next_note_on['timestamp'] - 1
-				if gap_dur < const.SUGGESTED_RELEASE_TIME:
-					if note_dur > const.SUGGESTED_DUR + gap_dur:
-						note_off['timestamp'] = note_off['timestamp'] - gap_dur
-					else:
-						note_off['timestamp'] = (gap_dur + note_dur) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME)
-						small_release_time = (gap_dur + note_dur) * const.MULTIPLIER_SPLIT_RELEASE_TIME
-						if small_release_time < const.MIN_RELEASE_TIME:
-							# -set gap = small_release_time
-							note_off['timestamp'] = next_note_on['timestamp'] - small_release_time
-						# -check if there is any overcut, if there is overcut, reduce until 1ms apart.
-						if note_off['timestamp'] > next_note_on['timestamp']:
-							note_off['timestamp'] = next_note_on['timestamp'] - 1
-				#add hold delay if note is long enough
-				if note_dur > const.HLD_DLY and note_on['power'] != const.HLD_DLY_PWR and note_on['event']==1:
-					notes.append({'timestamp':note_on['timestamp']+const.HLD_DLY,
-								  'track':note_on['track'],
-								  'channel':note_on['channel'],
-								  'event':1,
-								  'note':note_on['note'],
-								  'power':const.HLD_DLY_PWR})
+	#rewrite with using note.py
+	for index,note in enumerate(notes_copy):
+		next_note = notes_copy[index+1] if index+1 < len(notes_copy) else None
+		print next_note
+		if next_note is not None:
+			if note.get_dur() < const.SUGGESTED_DUR:
+				note.set_dur(const.SUGGESTED_DUR)
+				if note.is_overlapped(next_note): note.set_gap(next_note,gap=1)
+			if note.get_gap(next_note) < const.SUGGESTED_RELEASE_TIME and note.get_gap(next_note) is not None:
+				if note.get_dur() > const.SUGGESTED_DUR + note.get_gap(next_note):
+					note.set_gap(next_note,note.get_gap(next_note))
+				else:
+					note.set_dur((note.get_gap(next_note) + note.get_dur()) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME))
+					small_release_time = (note.get_gap(next_note) + note.get_dur()) * const.MULTIPLIER_SPLIT_RELEASE_TIME
+					if small_release_time < const.MIN_RELEASE_TIME:
+						# -set gap = small_release_time
+						note.set_gap(next_note,small_release_time)
+						#note_off['timestamp'] = next_note_on['timestamp'] - small_release_time
+					# -check if there is any overcut, if there is overcut, reduce until 1ms apart.
+					if note.is_overlapped(next_note):
+						note.set_gap(next_note,1)
+						# note_off['timestamp'] = next_note_on['timestamp'] - 1
+			#add hold delay if note is long enough
+			if note.get_dur() > const.HLD_DLY and note.power != const.HLD_DLY_PWR:
+				note.hold_delay=1
 
+
+	for note in notes_copy:
+		print note
 	#write files
-	notes.sort(key=lambda x: (x['timestamp'],x['track'],x['channel']))
+	notes_copy.sort(key=lambda x: (x['note_on']))
+
+	print "after sort-------------------------"
+
+	for note in notes_copy:
+		print note
+
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
 	write_header(write_file)
-	for note in notes:
-		write_note(write_file,timestamp=note['timestamp'],
-							  track=note['track'],
-							  channel=note['channel'],
-							  event=note['event'],
-							  note=note['note'],
-							  power=note['power'])
+	for note in notes_copy:
+		write_note(write_file,timestamp=note.note_on,
+							  track=note.track,
+							  channel=note.channel,
+							  event=1,
+							  note=note.key,
+							  power=note.power)
+		# if note.hold_delay != None:
+		# 	write_note(write_file,timestamp=note.note_on + const.HLD_DLY,
+		# 						  track=note.track,
+		# 						  channel=note.channel,
+		# 						  event=1,
+		# 						  note=note.key,
+		# 						  power=note.power)
+		write_note(write_file,timestamp=note.note_off,
+							  track=note.track,
+							  channel=note.channel,
+							  event=0,
+							  note=note.key,
+							  power=note.power)
 	write_footer(write_file)
 	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
