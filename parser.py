@@ -9,7 +9,7 @@ def write_header(write_file):
 	write_file.write('import time\n')
 	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(const.COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
-	write_file.write('#<timestamp,event,note,power>\n')
+	write_file.write('#<Timestamp, track number, MIDI channel, type, key, value>\n')
 	write_file.write('ser.write(\'<0,0,0,8,0,0>\')\n')
 
 def write_footer(write_file):
@@ -120,7 +120,7 @@ if(args.input_file):
 								   track=note['track'],
 								   channel=note['channel']))
 
-	#rewrite with using note.py
+	#cut tail and ensure min note
 	for index,note in enumerate(notes_copy):
 		next_note = notes_copy[index+1] if index+1 < len(notes_copy) else None
 		print next_note
@@ -146,17 +146,9 @@ if(args.input_file):
 			if note.get_dur() > const.HLD_DLY and note.power != const.HLD_DLY_PWR:
 				note.hold_delay=1
 
-	notes_copy = implode_notes(notes_copy)
-	for note in notes_copy:
-		print note
 	#write files
+	notes_copy = implode_notes(notes_copy)
 	notes_copy.sort(key=lambda x: (x['timestamp']))
-
-	print "after sort-------------------------"
-
-	for note in notes_copy:
-		print note
-
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
 	write_header(write_file)
 	for note in notes_copy:
