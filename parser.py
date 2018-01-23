@@ -2,20 +2,21 @@ import argparse
 import re
 import const
 import math
+from note import Note
 
 def write_header(write_file):
 	write_file.write('import serial\n')
 	write_file.write('import time\n')
 	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(const.COM_SERIAL))
 	write_file.write('time.sleep(1)\n\n')
-	write_file.write('#<timestamp,event,note,midipower>\n')
+	write_file.write('#<timestamp,event,note,power>\n')
 	write_file.write('ser.write(\'<0,0,0,8,0,0>\')\n')
 
 def write_footer(write_file):
 	write_file.write('ser.write(\'<0,0,0,7,0,0>\')\n')
 
-def write_note(write_file,timestamp,track,channel,event,note,midipower,hold=False):
-	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp),track,channel,event,note,midipower))
+def write_note(write_file,timestamp,track,channel,event,note,power,hold=False):
+	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp),track,channel,event,note,power))
 	write_file.write('ser.readline()\n')
 	if(hold==True and event == 1):
 		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp + const.HLD_DLY),track,channel,event,note,const.HLD_DLY_PWR))
@@ -23,11 +24,11 @@ def write_note(write_file,timestamp,track,channel,event,note,midipower,hold=Fals
 	
 
 def adjust_note_vol(note,avg):
-	note['midipower'] = int((note['midipower']-avg) * const.NOTE_SCALE[note['note']] + const.NOTE_OFFSET[note['note']] + avg)
+	note['power'] = int((note['power']-avg) * const.NOTE_SCALE[note['note']] + const.NOTE_OFFSET[note['note']] + avg)
 	return note
 
 def compress_note(note,tmax,tmin):
-	note['midipower'] = tmax if note['midipower'] > tmax else tmin
+	note['power'] = tmax if note['power'] > tmax else tmin
 	return note
 
 parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
@@ -43,42 +44,47 @@ if(args.input_file):
 	num_of_notes = 0
 	sum_vol = 0
 
-	# read from txt and store into lists of <timestamp,event,note,midipower>
+	# read from txt and store into lists of <timestamp,event,note,power>
 	for line in read_file:		
-		timestamp,track,channel,event,note,midipower=line.strip().split(',')
-		notes.append({'timestamp':int(timestamp),'track':int(track),'channel':(channel),'event':int(event),'note':int(note),'midipower':int(midipower)})
+		timestamp,track,channel,event,note,power=line.strip().split(',')
+		notes.append({'timestamp':int(timestamp),'track':int(track),'channel':(channel),'event':int(event),'note':int(note),'power':int(power)})
 		if int(event) == 1:
 			num_of_notes+=1
-			sum_vol+=int(midipower)
+			sum_vol+=int(power)
 
 	avg_vol = sum_vol/num_of_notes
 
 	# normalize all notes
 	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
 	for note in notes:
-		if note['event']==1: note['midipower'] -= avg_vol
-	notes.sort(key=lambda x: (x['event'],x['midipower']))
+		if note['event']==1: note['power'] -= avg_vol
+	notes.sort(key=lambda x: (x['event'],x['power']))
 	num_percent = num_of_notes / const.NUM_PERCENT
 	low_linear_power, high_linear_power = 0.0, 0.0
-	for index, note in enumerate(filter(lambda x:x['event']==1 and x['midipower'] < 0,notes)):
-		if index<num_percent: note['midipower'] = tmin;
+	for index, note in enumerate(filter(lambda x:x['event']==1 and x['power'] < 0,notes)):
+		if index<num_percent: note['power'] = tmin;
 		elif index==num_percent: 
-			low_exp_power = tmin/note['midipower'] if note['midipower']!=0 else 1
-		else: note['midipower'] = note['midipower'] * low_linear_power
-	for index, note in enumerate(filter(lambda x:x['event']==1 and x['midipower'] >= 0, reversed(notes))):
-		if index<num_percent: note['midipower'] = tmax;
+			low_exp_power = tmin/note['power'] if note['power']!=0 else 1
+		else: note['power'] = note['power'] * low_linear_power
+	for index, note in enumerate(filter(lambda x:x['event']==1 and x['power'] >= 0, reversed(notes))):
+		if index<num_percent: note['power'] = tmax;
 		elif index==num_percent: 
-			high_exp_power=tmax/note['midipower'] if note['midipower']!=0 else 1
-		else: note['midipower'] = note['midipower'] * high_linear_power
+			high_exp_power=tmax/note['power'] if note['power']!=0 else 1
+		else: note['power'] = note['power'] * high_linear_power
 	for index, note in enumerate(filter(lambda x:x['event']==1, notes)):
-		note['midipower'] = int(note['midipower'] + const.TARGET_MAX - tmax)
+		note['power'] = int(note['power'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
 	# cut tail & min note dur
 	notes.sort(key=lambda x: (x['note'],x['timestamp'],x['track'],x['channel']))
+
+	# now the notes should be aligned together to be stored as notes
+
 	for index,note in enumerate(notes):
-		if index<len(notes)-1:
-			if note['event'] == 0 and note['note']==notes[index+1]['note']:
+		if index<len(notes)-2:
+			
+
+			if note['event'] == 1 and note['note']==notes[index+1]['note']:
 				note_on,note_off,next_note_on = notes[index-1], note, notes[index+1]
 				gap_dur,note_dur = next_note_on['timestamp']-note_off['timestamp'],note_off['timestamp']-note_on['timestamp']
 				if note_dur < const.SUGGESTED_DUR:
@@ -98,16 +104,16 @@ if(args.input_file):
 						if note_off['timestamp'] > next_note_on['timestamp']:
 							note_off['timestamp'] = next_note_on['timestamp'] - 1
 				#add hold delay if note is long enough
-				if note_dur > const.HLD_DLY and note_on['midipower'] != const.HLD_DLY_PWR and note_on['event']==1:
+				if note_dur > const.HLD_DLY and note_on['power'] != const.HLD_DLY_PWR and note_on['event']==1:
 					notes.append({'timestamp':note_on['timestamp']+const.HLD_DLY,
 								  'track':note_on['track'],
 								  'channel':note_on['channel'],
 								  'event':1,
 								  'note':note_on['note'],
-								  'midipower':const.HLD_DLY_PWR})
+								  'power':const.HLD_DLY_PWR})
 
 	#write files
-	notes.sort(key=lambda x: (x['timestamp']))
+	notes.sort(key=lambda x: (x['timestamp'],x['track'],x['channel']))
 	write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
 	write_header(write_file)
 	for note in notes:
@@ -116,7 +122,7 @@ if(args.input_file):
 							  channel=note['channel'],
 							  event=note['event'],
 							  note=note['note'],
-							  midipower=note['midipower'])
+							  power=note['power'])
 	write_footer(write_file)
 	print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
@@ -147,14 +153,14 @@ elif (args.test):
 												 channel=1,
 												 event=1,
 												 note=cur_note,
-												 midipower=cur_pwr)
+												 power=cur_pwr)
 				write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_note,cur_pwr))
 				write_note(write_file=write_file,timestamp=delay_time,
 												 track=0,
 												 channel=1,
 												 event=0,
 												 note=cur_note,
-												 midipower=0)
+												 power=0)
 				cur_pwr = inc_pwr + cur_pwr
 			cur_note = cur_note + 1
 
@@ -176,7 +182,7 @@ elif (args.test):
 											 channel=1,
 											 event=1,
 											 note=cur_note,
-											 midipower=pwr,
+											 power=pwr,
 											 hold=True)
 			write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_note,pwr))
 			write_note(write_file=write_file,timestamp=delay_time,
@@ -184,7 +190,7 @@ elif (args.test):
 											 channel=1,
 											 event=0,
 											 note=cur_note,
-											 midipower=0,
+											 power=0,
 											 hold=True)
 			cur_note = cur_note + 1
 
