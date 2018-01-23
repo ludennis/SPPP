@@ -122,6 +122,38 @@ if(args.input_file):
 				note.hold_delay=1
 
 
+notes.append({'timestamp':int(timestamp),
+			  'track':int(track),
+			  'channel':(channel),
+			  'event':int(event),
+			  'note':int(note),
+			  'power':int(power)})
+
+def implode_notes(self):
+	imploded_list = []
+	for note in self:
+		imploded_list.append({'timestamp':int(note.note_on),
+							  'track':int(note.track),
+							  'channel':(note.channel),
+							  'event':int(1),
+							  'note':int(note.key),
+							  'power':int(note.power)})
+		imploded_list.append({'timestamp':int(note.note_off),
+							  'track':int(note.track),
+							  'channel':(note.channel),
+							  'event':int(0),
+							  'note':int(note.key),
+							  'power':int(note.power)})
+		if note.hold_delay != None:
+			imploded_list.append({'timestamp':int(note.note_on+const.HLD_DLY),
+								  'track':int(note.track),
+								  'channel':(note.channel),
+								  'event':int(1),
+								  'note':int(note.key),
+								  'power':int(const.HLD_DLY_PWR)})
+	return imploded_list
+
+	notes_copy = notes_copy.implode_notes()
 	for note in notes_copy:
 		print note
 	#write files
