@@ -123,7 +123,6 @@ if(args.input_file):
 	#cut tail and ensure min note
 	for index,note in enumerate(notes_copy):
 		next_note = notes_copy[index+1] if index+1 < len(notes_copy) else None
-		print next_note
 		if next_note is not None:
 			if note.get_dur() < const.SUGGESTED_DUR:
 				note.set_dur(const.SUGGESTED_DUR)

@@ -38,14 +38,14 @@ class Note(object):
 	def is_same_key_with(self,other):
 		return self.key == other.key
 
-first_note = Note(note_on=10102,note_off=10229,key=74,power=110)
-second_note = Note(note_on=10255,note_off=10918,key=74,power=110)
-print first_note
-print second_note
-print 'the gap between note 1 and note 2 is {}'.format(first_note.get_gap(second_note))
+# first_note = Note(note_on=10102,note_off=10229,key=74,power=110)
+# second_note = Note(note_on=10255,note_off=10918,key=74,power=110)
+# print first_note
+# print second_note
+# print 'the gap between note 1 and note 2 is {}'.format(first_note.get_gap(second_note))
 
-first_note.set_gap(second_note,50)
+# first_note.set_gap(second_note,50)
 
-print first_note
-print second_note
-print 'the gap between note 1 and note 2 is {}'.format(first_note.get_gap(second_note))
+# print first_note
+# print second_note
+# print 'the gap between note 1 and note 2 is {}'.format(first_note.get_gap(second_note))
