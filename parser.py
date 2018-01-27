@@ -100,10 +100,9 @@ if(args.input_file):
 		note['power'] = int(note['power'] + const.TARGET_MAX - tmax)
 		note=adjust_note_vol(note=note,avg=avg_vol)
 
-	# cut tail & min note dur
-	notes.sort(key=lambda x: (x['note'],x['timestamp'],x['track'],x['channel']))
 
-	# now the notes should be aligned together to be stored as notes
+	#store as Note class
+	notes.sort(key=lambda x: (x['note'],x['timestamp'],x['track'],x['channel']))
 	notes_copy = []
 	for index,note in enumerate(notes):
 		if note['event'] == 1:
@@ -120,26 +119,31 @@ if(args.input_file):
 								   track=note['track'],
 								   channel=note['channel']))
 
-	#cut tail and ensure min note
+	# cut tail & min note dur
 	for index,note in enumerate(notes_copy):
+		# check if out of bound
 		next_note = notes_copy[index+1] if index+1 < len(notes_copy) else None
+		#if next note exists
 		if next_note is not None:
+			#set note duration to SUGGESTED_DUR if less than it
 			if note.get_dur() < const.SUGGESTED_DUR:
 				note.set_dur(const.SUGGESTED_DUR)
+				#change gap to 1ms if there's overlap
 				if note.is_overlapped(next_note): note.set_gap(next_note,gap=1)
+			# if gap is leses than SUGGESTED_RELEASE_TIME and that there is a gap
 			if note.get_gap(next_note) < const.SUGGESTED_RELEASE_TIME and note.get_gap(next_note) is not None:
+				# if ntoe duration is larger than SUGGESTED_DUR + gap
 				if note.get_dur() > const.SUGGESTED_DUR + note.get_gap(next_note):
 					note.set_gap(next_note,note.get_gap(next_note))
 				else:
+					# if not set note duration to math formula
 					note.set_dur((note.get_gap(next_note) + note.get_dur()) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME))
+					# update small release time 
 					small_release_time = (note.get_gap(next_note) + note.get_dur()) * const.MULTIPLIER_SPLIT_RELEASE_TIME
 					if small_release_time < const.MIN_RELEASE_TIME:
-						# -set gap = small_release_time
 						note.set_gap(next_note,small_release_time)
-						#note_off['timestamp'] = next_note_on['timestamp'] - small_release_time
-					# -check if there is any overcut, if there is overcut, reduce until 1ms apart.
 					if note.is_overlapped(next_note):
-						note.set_gap(next_note,1)
+						note.set_gap(next_note,const.MIN_RELEASE_TIME)
 						# note_off['timestamp'] = next_note_on['timestamp'] - 1
 			#add hold delay if note is long enough
 			if note.get_dur() > const.HLD_DLY and note.power != const.HLD_DLY_PWR:
