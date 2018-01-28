@@ -133,14 +133,17 @@ if(args.input_file):
 			# if gap is leses than SUGGESTED_RELEASE_TIME and that there is a gap
 			if note.get_gap(next_note) < const.SUGGESTED_RELEASE_TIME and note.get_gap(next_note) is not None:
 				# if ntoe duration is larger than SUGGESTED_DUR + gap
+				print '{} ------------------> {}'.format(note,next_note)
 				if note.get_dur() > const.SUGGESTED_DUR + note.get_gap(next_note):
-					note.set_gap(next_note,note.get_gap(next_note))
+					note.set_dur(note.get_dur()-const.SUGGESTED_RELEASE_TIME)
 				else:
-					# if not set note duration to math formula
+					# if not, set note duration to math formula
 					note.set_dur((note.get_gap(next_note) + note.get_dur()) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME))
 					# update small release time 
 					small_release_time = (note.get_gap(next_note) + note.get_dur()) * const.MULTIPLIER_SPLIT_RELEASE_TIME
 					if small_release_time < const.MIN_RELEASE_TIME:
+						note.set_gap(next_note,const.MIN_RELEASE_TIME)
+					else:
 						note.set_gap(next_note,small_release_time)
 					if note.is_overlapped(next_note):
 						note.set_gap(next_note,const.MIN_RELEASE_TIME)
@@ -148,6 +151,9 @@ if(args.input_file):
 			#add hold delay if note is long enough
 			if note.get_dur() > const.HLD_DLY and note.power != const.HLD_DLY_PWR:
 				note.hold_delay=1
+
+	for index,note in enumerate(notes_copy):
+		print 'NoteOn = {}, note dur = {}, note gap = {}'.format(note.note_on,note.get_dur(),note.get_gap(notes_copy[index+1]))
 
 	#write files
 	notes_copy = implode_notes(notes_copy)
