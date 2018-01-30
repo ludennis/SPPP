@@ -19,7 +19,7 @@ def write_note(write_file,timestamp,track,channel,event,note,power,hold=False):
 	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp),track,channel,event,note,power))
 	write_file.write('ser.readline()\n')
 	if(hold==True and event == 1):
-		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp + const.HLD_DLY),track,channel,event,note,const.HLD_DLY_PWR))
+		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp + const.LOW_POWER_START_DUR),track,channel,event,note,const.LOW_POWER_START_POWER))
 		write_file.write('ser.readline()\n')
 	
 
@@ -47,12 +47,12 @@ def implode_notes(self):
 							  'note':int(note.key),
 							  'power':int(note.power)})
 		if note.hold_delay != None:
-			imploded_list.append({'timestamp':int(note.note_on+const.HLD_DLY),
+			imploded_list.append({'timestamp':int(note.note_on+const.LOW_POWER_START_DUR),
 								  'track':int(note.track),
 								  'channel':(note.channel),
 								  'event':int(1),
 								  'note':int(note.key),
-								  'power':int(const.HLD_DLY_PWR)})
+								  'power':int(const.LOW_POWER_START_POWER)})
 	return imploded_list
 
 
@@ -125,35 +125,35 @@ if(args.input_file):
 		next_note = notes_copy[index+1] if index+1 < len(notes_copy) else None
 		#if next note exists
 		if next_note is not None:
-			#set note duration to SUGGESTED_DUR if less than it
-			if note.get_dur() < const.SUGGESTED_DUR:
-				note.set_dur(const.SUGGESTED_DUR)
+			#set note duration to DESIRED_NOTE_DUR if less than it
+			if note.get_dur() < const.DESIRED_NOTE_DUR:
+				note.set_dur(const.DESIRED_NOTE_DUR)
 				#change gap to 1ms if there's overlap
 				if note.is_overlapped(next_note): note.set_gap(next_note,gap=1)
-			# if gap is leses than SUGGESTED_RELEASE_TIME and that there is a gap
-			if note.get_gap(next_note) < const.SUGGESTED_RELEASE_TIME and note.get_gap(next_note) is not None:
-				# if ntoe duration is larger than SUGGESTED_DUR + gap
-				print '{} ------------------> {}'.format(note,next_note)
-				if note.get_dur() > const.SUGGESTED_DUR + note.get_gap(next_note):
-					note.set_dur(note.get_dur()-const.SUGGESTED_RELEASE_TIME)
+			# if gap is leses than DESIRED_GAP_DUR and that there is a gap
+			if note.get_gap(next_note) < const.DESIRED_GAP_DUR and note.get_gap(next_note) is not None:
+				# if ntoe duration is larger than DESIRED_NOTE_DUR + gap
+				# print '{} ------------------> {}'.format(note,next_note)
+				if note.get_dur() > const.DESIRED_NOTE_DUR + note.get_gap(next_note):
+					note.set_dur(note.get_dur()-const.DESIRED_GAP_DUR)
 				else:
 					# if not, set note duration to math formula
-					note.set_dur((note.get_gap(next_note) + note.get_dur()) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME))
+					note.set_dur((note.get_gap(next_note) + note.get_dur()) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME_RATIO))
 					# update small release time 
-					small_release_time = (note.get_gap(next_note) + note.get_dur()) * const.MULTIPLIER_SPLIT_RELEASE_TIME
-					if small_release_time < const.MIN_RELEASE_TIME:
-						note.set_gap(next_note,const.MIN_RELEASE_TIME)
+					small_release_time = (note.get_gap(next_note) + note.get_dur()) * const.MULTIPLIER_SPLIT_RELEASE_TIME_RATIO
+					if small_release_time < const.MIN_GAP_DUR:
+						note.set_gap(next_note,const.MIN_GAP_DUR)
 					else:
 						note.set_gap(next_note,small_release_time)
 					if note.is_overlapped(next_note):
-						note.set_gap(next_note,const.MIN_RELEASE_TIME)
+						note.set_gap(next_note,const.MIN_GAP_DUR)
 						# note_off['timestamp'] = next_note_on['timestamp'] - 1
 			#add hold delay if note is long enough
-			if note.get_dur() > const.HLD_DLY and note.power != const.HLD_DLY_PWR:
+			if note.get_dur() > const.LOW_POWER_START_DUR and note.power != const.LOW_POWER_START_POWER:
 				note.hold_delay=1
 
-	for index,note in enumerate(notes_copy):
-		print 'NoteOn = {}, note dur = {}, note gap = {}'.format(note.note_on,note.get_dur(),note.get_gap(notes_copy[index+1]))
+	# for index,note in enumerate(notes_copy):
+	# 	print 'NoteOn = {}, note dur = {}, note gap = {}'.format(note.note_on,note.get_dur(),note.get_gap(notes_copy[index+1]))
 
 	#write files
 	notes_copy = implode_notes(notes_copy)
@@ -186,8 +186,8 @@ elif (args.test):
 		inc_pwr=int(args.test[5])
 		cur_pwr = min_pwr
 
-		if(delay_time<const.HLD_DLY):
-			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HLD_DLY)
+		if(delay_time<const.LOW_POWER_START_DUR):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.LOW_POWER_START_DUR)
 
 		while cur_note <= end_note:
 			cur_pwr = min_pwr
@@ -217,8 +217,8 @@ elif (args.test):
 	elif len(args.test) == 4:
 		pwr=int(args.test[3])
 
-		if(delay_time<const.HLD_DLY):
-			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.HLD_DLY)
+		if(delay_time<const.LOW_POWER_START_DUR):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.LOW_POWER_START_DUR)
 
 		while cur_note <= end_note:
 			write_note(write_file=write_file,timestamp=0,
