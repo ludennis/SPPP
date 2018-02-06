@@ -9,7 +9,7 @@ def write_header(write_file):
 	write_file.write('import serial\n')
 	write_file.write('import time\n')
 	write_file.write('ser = serial.Serial(\'{0}\', 115200, timeout=5)\n'.format(const.COM_SERIAL))
-	write_file.write('time.sleep(1)\n\n')
+	write_file.write('time.sleep(5)\n\n')
 	write_file.write('#<Timestamp, track number, MIDI channel, type, key, value>\n')
 	write_file.write('ser.write(\'<0,0,0,8,0,0>\')\n')
 
@@ -167,14 +167,19 @@ if __name__ == "__main__":
 
 	if(args.input_file):
 		# read from txt and store into lists of <timestamp,event,note,power>
-		notes = []
+		midi_notes, notes = [], []
 		with open(args.input_file,'r') as read_file:
 			for line in read_file:		
 				timestamp,track,channel,event,note,power=line.strip().split(',')
-				notes.append({'timestamp':int(timestamp),'track':int(track),'channel':(channel),'event':int(event),'note':int(note),'power':int(power)})
+				midi_notes.append({'timestamp':int(timestamp),
+								   'track':int(track),
+								   'channel':(channel),
+								   'event':int(event),
+								   'note':int(note),
+								   'power':int(power)})
 		
 		#store as Note class
-		notes=store_as_notes(notes)
+		notes=store_as_notes(midi_notes)
 
 		# normalize all notes
 		notes=normalize(notes)
