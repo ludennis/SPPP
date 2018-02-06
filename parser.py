@@ -102,15 +102,13 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	if(args.input_file):
-
-		read_file = open(args.input_file, 'r')
-
-		notes = []
-
+		
 		# read from txt and store into lists of <timestamp,event,note,power>
-		for line in read_file:		
-			timestamp,track,channel,event,note,power=line.strip().split(',')
-			notes.append({'timestamp':int(timestamp),'track':int(track),'channel':(channel),'event':int(event),'note':int(note),'power':int(power)})
+		notes = []
+		with open(args.input_file,'r') as read_file:
+			for line in read_file:		
+				timestamp,track,channel,event,note,power=line.strip().split(',')
+				notes.append({'timestamp':int(timestamp),'track':int(track),'channel':(channel),'event':int(event),'note':int(note),'power':int(power)})
 		
 		# normalize all notes
 		notes=normalize(notes)
@@ -201,24 +199,43 @@ if __name__ == "__main__":
 			if(delay_time<const.NORMAL_POWER_START_DUR):
 				logging.warning('\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.NORMAL_POWER_START_DUR))
 
-			while cur_note <= end_note:
-				cur_pwr = min_pwr
-				while cur_pwr <= max_pwr:
-					write_note(write_file=write_file,timestamp=0,
-													 track=0,
-													 channel=1,
-													 event=1,
-													 note=cur_note,
-													 power=cur_pwr)
-					write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_note,cur_pwr))
-					write_note(write_file=write_file,timestamp=delay_time,
-													 track=0,
-													 channel=1,
-													 event=0,
-													 note=cur_note,
-													 power=0)
-					cur_pwr = inc_pwr + cur_pwr
-				cur_note = cur_note + 1
+			notes=[]
+			for cur_note in xrange(start_note,end_note):
+				for cur_pwr in xrange(min_pwr, max_pwr,inc_pwr):
+					notes.append(Note(note_on=len(notes)*delay_time,
+									  note_off=(len(notes)+1))*delay_time,
+									  key=cur_note,
+									  power=cur_power,
+									  track=1,
+									  channel=1)
+			notes = implode_notes(notes)
+			notes.sort(key=lambda x: (x['timestamp']))
+			for note in notes:
+				write_note(write_file,timestamp=note['timestamp'],
+									  track=note['track'],
+									  channel=note['channel'],
+									  event=note['event'],
+									  note=note['note'],
+									  power=note['power'])
+
+			# while cur_note <= end_note:
+			# 	cur_pwr = min_pwr
+			# 	while cur_pwr <= max_pwr:
+			# 		write_note(write_file=write_file,timestamp=0,
+			# 										 track=0,
+			# 										 channel=1,
+			# 										 event=1,
+			# 										 note=cur_note,
+			# 										 power=cur_pwr)
+			# 		write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_note,cur_pwr))
+			# 		write_note(write_file=write_file,timestamp=delay_time,
+			# 										 track=0,
+			# 										 channel=1,
+			# 										 event=0,
+			# 										 note=cur_note,
+			# 										 power=0)
+			# 		cur_pwr = inc_pwr + cur_pwr
+			# 	cur_note = cur_note + 1
 
 			print ('\ntest.py file has been generated to play from notes {0}'
 				  '-{1} with power {2} to {3} in increments of {4} '
