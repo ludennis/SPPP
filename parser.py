@@ -69,10 +69,14 @@ def implode_notes(notes):
 
 def normalize(notes):
 	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
+	num_of_notes = sum(1 for note in notes if note['event']==1)
+	sum_vol = sum(note['power'] for note in notes if note['event']==1)
+	avg_vol = sum_vol / num_of_notes
+	num_percent = num_of_notes / const.NUM_PERCENT
+
 	for note in notes:
 		if note['event']==1: note['power'] -= avg_vol
 	notes.sort(key=lambda x: (x['event'],x['power']))
-	num_percent = num_of_notes / const.NUM_PERCENT
 	NORMAL_linear_power, high_linear_power = 0.0, 0.0
 	for index, note in enumerate(filter(lambda x:x['event']==1 and x['power'] < 0,notes)):
 		if index<num_percent: note['power'] = tmin;
@@ -102,19 +106,11 @@ if __name__ == "__main__":
 		read_file = open(args.input_file, 'r')
 
 		notes = []
-		num_of_notes = 0
-		sum_vol = 0
 
 		# read from txt and store into lists of <timestamp,event,note,power>
 		for line in read_file:		
 			timestamp,track,channel,event,note,power=line.strip().split(',')
 			notes.append({'timestamp':int(timestamp),'track':int(track),'channel':(channel),'event':int(event),'note':int(note),'power':int(power)})
-			if int(event) == 1:
-				num_of_notes+=1
-				sum_vol+=int(power)
-
-		avg_vol = sum_vol/num_of_notes
-
 		
 		# normalize all notes
 		notes=normalize(notes)
@@ -183,6 +179,7 @@ if __name__ == "__main__":
 								  note=note['note'],
 								  power=note['power'])
 		write_footer(write_file)
+		num_of_notes = num_notes = sum(1 for note in notes if note['event']==1)
 		print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
 	elif (args.test):
