@@ -35,25 +35,36 @@ def compress_note(note,tmax,tmin):
 def implode_notes(self):
 	imploded_list = []
 	for note in self:
+		#add high power first
 		imploded_list.append({'timestamp':int(note.note_on),
 							  'track':int(note.track),
 							  'channel':(note.channel),
 							  'event':int(1),
 							  'note':int(note.key),
-							  'power':int(note.power)})
+							  'power':int(const.HIGH_POWER_START_POWER)})
+		#then add normal power
+		if note.get_dur() >= const.HIGH_POWER_START_DUR:
+			imploded_list.append({'timestamp':int(const.HIGH_POWER_START_DUR + note.note_on),
+								  'track':int(note.track),
+								  'channel':(note.channel),
+								  'event':int(1),
+								  'note':int(note.key),
+								  'power':int(note.power)})
+		#then add low power
+		if note.get_dur() >= const.HIGH_POWER_START_DUR + const.NORMAL_POWER_START_DUR:
+			imploded_list.append({'timestamp':int(const.HIGH_POWER_START_DUR + const.NORMAL_POWER_START_DUR + note.note_on),
+								  'track':int(note.track),
+								  'channel':(note.channel),
+								  'event':int(1),
+								  'note':int(note.key),
+								  'power':int(const.LOW_POWER)})
 		imploded_list.append({'timestamp':int(note.note_off),
 							  'track':int(note.track),
 							  'channel':(note.channel),
 							  'event':int(0),
 							  'note':int(note.key),
 							  'power':int(note.power)})
-		if note.hold_delay != None:
-			imploded_list.append({'timestamp':int(note.note_on+const.NORMAL_POWER_START_DUR),
-								  'track':int(note.track),
-								  'channel':(note.channel),
-								  'event':int(1),
-								  'note':int(note.key),
-								  'power':int(const.NORMAL_POWER_START_POWER)})
+		
 	return imploded_list
 
 
@@ -149,9 +160,6 @@ if(args.input_file):
 					if note.is_overlapped(next_note):
 						note.set_gap(next_note,const.MIN_GAP_DUR)
 						# note_off['timestamp'] = next_note_on['timestamp'] - 1
-			#add hold delay if note is long enough
-			if note.get_dur() > const.NORMAL_POWER_START_DUR and note.power != const.NORMAL_POWER_START_POWER:
-				note.hold_delay=1
 
 	# for index,note in enumerate(notes_copy):
 	# 	print 'NoteOn = {}, note dur = {}, note gap = {}'.format(note.note_on,note.get_dur(),note.get_gap(notes_copy[index+1]))
