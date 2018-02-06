@@ -10,7 +10,7 @@
 ## Commands for 'parser.py'
 
 * `parser.py [input_text]` (e.g. `parser.py input.txt`)
-* `parser.py -t [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr]` (e.g. `parser.py -t 24 96 60 100 5`)
+* `parser.py -t [start_key] [end_key] [min_pwr] [max_pwr] [inc_pwr]` (e.g. `parser.py -t 24 86 100 20 100 20`)
 * `parser.py -t [start_key] [end_key] [pwr]` (e.g. `parser.py -t 24 96 70`)
 * `parser.py -h` (shows the list of commands and their parameters)
 * `parser.py [input_text] --tmin=[target_min] --tmax=[target_max]` (e.g. `parser.py departures.txt --tmin=105 --tmax=180`)
