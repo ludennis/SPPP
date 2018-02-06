@@ -58,18 +58,18 @@ def implode_notes(notes):
 							  'channel':(note.channel),
 							  'event':int(1),
 							  'note':int(note.key),
-							  'power':int(const.HIGH_POWER_START_POWER)})
+							  'power':int(const.HIGH_POWER)})
 		#then add normal power
-		if note.get_dur() >= const.HIGH_POWER_START_DUR:
-			imploded_list.append({'timestamp':int(const.HIGH_POWER_START_DUR + note.note_on),
+		if note.get_dur() >= const.HIGH_POWER_DUR:
+			imploded_list.append({'timestamp':int(const.HIGH_POWER_DUR + note.note_on),
 								  'track':int(note.track),
 								  'channel':(note.channel),
 								  'event':int(1),
 								  'note':int(note.key),
 								  'power':int(note.power)})
 		#then add low power
-		if note.get_dur() >= const.HIGH_POWER_START_DUR + const.NORMAL_POWER_START_DUR:
-			imploded_list.append({'timestamp':int(const.HIGH_POWER_START_DUR + const.NORMAL_POWER_START_DUR + note.note_on),
+		if note.get_dur() >= const.HIGH_POWER_DUR + const.NORMAL_POWER_START_DUR:
+			imploded_list.append({'timestamp':int(const.HIGH_POWER_DUR + const.NORMAL_POWER_START_DUR + note.note_on),
 								  'track':int(note.track),
 								  'channel':(note.channel),
 								  'event':int(1),
