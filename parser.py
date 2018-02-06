@@ -24,6 +24,19 @@ def write_note(write_file,timestamp,track,channel,event,note,power,hold=False):
 		write_file.write('ser.readline()\n')
 	
 
+def write_notes(write_file,notes):
+	notes_copy = implode_notes(notes)
+	notes_copy.sort(key=lambda x: (x['timestamp']))
+
+	for note in notes_copy:
+		write_note(write_file,timestamp=note['timestamp'],
+							  track=note['track'],
+							  channel=note['channel'],
+							  event=note['event'],
+							  note=note['note'],
+							  power=note['power'])
+
+
 def adjust_note_vol(note,avg):
 	note['power'] = int((note['power']-avg) * const.NOTE_SCALE[note['note']] + const.NOTE_OFFSET[note['note']] + avg)
 	return note
@@ -97,7 +110,7 @@ def normalize(notes):
 if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
-	parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [delay_time] [pwr]  or -test [start_note] [end_note] [delay_time] [min_pwr] [max_pwr] [inc_pwr] ')
+	parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [delay_time] [power]  or -test [start_note] [end_note] [delay_time] [min_power] [max_power] [inc_power] ')
 	parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
 	args = parser.parse_args()
 
@@ -165,18 +178,10 @@ if __name__ == "__main__":
 		# 	print 'NoteOn = {}, note dur = {}, note gap = {}'.format(note.note_on,note.get_dur(),note.get_gap(notes_copy[index+1]))
 
 		#write files
-		notes_copy = implode_notes(notes_copy)
-		notes_copy.sort(key=lambda x: (x['timestamp']))
 		write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
 		with open(args.input_file[:len(args.input_file)-4] + '.py','w') as write_file:
 			write_header(write_file)
-			for note in notes_copy:
-				write_note(write_file,timestamp=note['timestamp'],
-									  track=note['track'],
-									  channel=note['channel'],
-									  event=note['event'],
-									  note=note['note'],
-									  power=note['power'])
+			write_notes(write_file,notes_copy)
 			write_footer(write_file)
 		num_of_notes = num_notes = sum(1 for note in notes if note['event']==1)
 		print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
@@ -190,25 +195,25 @@ if __name__ == "__main__":
 		delay_time=int(args.test[2])
 		cur_note = start_note
 		
-		# -test [start_note] [end_note] [delay_time] [min_pwr] [max_pwr] [inc_pwr] 
+		# -test [start_note] [end_note] [delay_time] [min_power] [max_power] [inc_power] 
 		if len(args.test) == 6:
-			min_pwr=int(args.test[3])
-			max_pwr=int(args.test[4])
-			inc_pwr=int(args.test[5])
-			cur_pwr = min_pwr
+			min_power=int(args.test[3])
+			max_power=int(args.test[4])
+			inc_power=int(args.test[5])
+			cur_power = min_power
 
 			if(delay_time<const.NORMAL_POWER_START_DUR):
 				logging.warning('\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.NORMAL_POWER_START_DUR))
 
 			notes=[]
 			for cur_note in xrange(start_note,end_note):
-				for cur_pwr in xrange(min_pwr, max_pwr,inc_pwr):
+				for cur_power in xrange(min_power, max_power,inc_power):
 					notes.append(Note(note_on=len(notes)*delay_time,
-									  note_off=(len(notes)+1))*delay_time,
+									  note_off=(len(notes)+1)*delay_time,
 									  key=cur_note,
 									  power=cur_power,
 									  track=1,
-									  channel=1)
+									  channel=1))
 			notes = implode_notes(notes)
 			notes.sort(key=lambda x: (x['timestamp']))
 			for note in notes:
@@ -219,33 +224,15 @@ if __name__ == "__main__":
 									  note=note['note'],
 									  power=note['power'])
 
-			# while cur_note <= end_note:
-			# 	cur_pwr = min_pwr
-			# 	while cur_pwr <= max_pwr:
-			# 		write_note(write_file=write_file,timestamp=0,
-			# 										 track=0,
-			# 										 channel=1,
-			# 										 event=1,
-			# 										 note=cur_note,
-			# 										 power=cur_pwr)
-			# 		write_file.write('print \'playing note {0} with power {1}...\\n\'\n'.format(cur_note,cur_pwr))
-			# 		write_note(write_file=write_file,timestamp=delay_time,
-			# 										 track=0,
-			# 										 channel=1,
-			# 										 event=0,
-			# 										 note=cur_note,
-			# 										 power=0)
-			# 		cur_pwr = inc_pwr + cur_pwr
-			# 	cur_note = cur_note + 1
 
 			print ('\ntest.py file has been generated to play from notes {0}'
 				  '-{1} with power {2} to {3} in increments of {4} '
 			 	  'delay {5}ms'
-			 	  ''.format(start_note, end_note, min_pwr, max_pwr,inc_pwr,delay_time))
+			 	  ''.format(start_note, end_note, min_power, max_power,inc_power,delay_time))
 
-		# -test [start_note] [end_note] [delay_time] [pwr] 
+		# -test [start_note] [end_note] [delay_time] [power] 
 		elif len(args.test) == 4:
-			pwr=int(args.test[3])
+			power=int(args.test[3])
 
 			if(delay_time<const.NORMAL_POWER_START_DUR):
 				print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.NORMAL_POWER_START_DUR)
@@ -256,9 +243,9 @@ if __name__ == "__main__":
 												 channel=1,
 												 event=1,
 												 note=cur_note,
-												 power=pwr,
+												 power=power,
 												 hold=True)
-				write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_note,pwr))
+				write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_note,power))
 				write_note(write_file=write_file,timestamp=delay_time,
 												 track=0,
 												 channel=1,
@@ -270,7 +257,7 @@ if __name__ == "__main__":
 
 			print ('\ntest.py file has been generated to play notes {0}-{1}'
 				  ' with power {2} and delay {3}ms'
-			 	  ''.format(start_note, end_note, pwr, delay_time))
+			 	  ''.format(start_note, end_note, power, delay_time))
 		else:
 			parser.print_help()
 
