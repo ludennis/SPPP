@@ -168,15 +168,16 @@ if __name__ == "__main__":
 		notes_copy = implode_notes(notes_copy)
 		notes_copy.sort(key=lambda x: (x['timestamp']))
 		write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
-		write_header(write_file)
-		for note in notes_copy:
-			write_note(write_file,timestamp=note['timestamp'],
-								  track=note['track'],
-								  channel=note['channel'],
-								  event=note['event'],
-								  note=note['note'],
-								  power=note['power'])
-		write_footer(write_file)
+		with open(args.input_file[:len(args.input_file)-4] + '.py','w') as write_file:
+			write_header(write_file)
+			for note in notes_copy:
+				write_note(write_file,timestamp=note['timestamp'],
+									  track=note['track'],
+									  channel=note['channel'],
+									  event=note['event'],
+									  note=note['note'],
+									  power=note['power'])
+			write_footer(write_file)
 		num_of_notes = num_notes = sum(1 for note in notes if note['event']==1)
 		print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
