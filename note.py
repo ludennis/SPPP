@@ -1,3 +1,8 @@
+'''
+Note Class to encapsulate midi NoteOn's and NoteOff's
+with object oriented approach to simply operations
+'''
+
 class Note(object):
 	def __init__(self,note_on,note_off,key,power,track=None,channel=None,event=None):
 		self.note_on = note_on
