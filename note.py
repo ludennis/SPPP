@@ -1,10 +1,10 @@
 class Note(object):
-	def __init__(self,note_on,note_off,key,power,hold_delay=None,track=None,channel=None,event=None):
+	def __init__(self,note_on,note_off,key,power,dur=None,track=None,channel=None,event=None):
 		self.note_on = note_on
 		self.note_off = note_off
 		self.key = key
 		self.power = power
-		self.hold_delay = hold_delay
+		self.dur = dur
 		self.track = track
 		self.channel = channel
 		self.event = event
