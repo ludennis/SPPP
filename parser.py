@@ -13,8 +13,10 @@ def write_header(write_file):
 	write_file.write('#<Timestamp, track number, MIDI channel, type, key, value>\n')
 	write_file.write('ser.write(\'<0,0,0,8,0,0>\')\n')
 
+
 def write_footer(write_file):
 	write_file.write('ser.write(\'<0,0,0,7,0,0>\')\n')
+
 
 def write_note(write_file,timestamp,track,channel,event,note,power,hold=False):
 	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp),track,channel,event,note,power))
@@ -41,9 +43,11 @@ def adjust_note_vol(note,avg):
 	note['power'] = int((note['power']-avg) * const.NOTE_SCALE[note['note']] + const.NOTE_OFFSET[note['note']] + avg)
 	return note
 
+
 def compress_note(note,tmax,tmin):
 	note['power'] = tmax if note['power'] > tmax else tmin
 	return note
+
 
 def implode_notes(notes):
 	imploded_list = []
@@ -79,6 +83,7 @@ def implode_notes(notes):
 							  'power':int(note.power)})
 		
 	return imploded_list
+
 
 def normalize(notes):
 	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
@@ -174,11 +179,7 @@ if __name__ == "__main__":
 							note.set_gap(next_note,const.MIN_GAP_DUR)
 							# note_off['timestamp'] = next_note_on['timestamp'] - 1
 
-		# for index,note in enumerate(notes_copy):
-		# 	print 'NoteOn = {}, note dur = {}, note gap = {}'.format(note.note_on,note.get_dur(),note.get_gap(notes_copy[index+1]))
-
 		#write files
-		write_file = open(args.input_file[:len(args.input_file)-4] + '.py','w')
 		with open(args.input_file[:len(args.input_file)-4] + '.py','w') as write_file:
 			write_header(write_file)
 			write_notes(write_file,notes_copy)
@@ -187,16 +188,11 @@ if __name__ == "__main__":
 		print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
 
 	elif (args.test):
-		
-		write_file = open('test.py', 'w')
-		write_header(write_file)
-		start_note=int(args.test[0])
-		end_note=int(args.test[1])
-		delay_time=int(args.test[2])
-		cur_note = start_note
-		
 		# -test [start_note] [end_note] [delay_time] [min_power] [max_power] [inc_power] 
 		if len(args.test) == 6:
+			start_note=int(args.test[0])
+			end_note=int(args.test[1])
+			delay_time=int(args.test[2])
 			min_power=int(args.test[3])
 			max_power=int(args.test[4])
 			inc_power=int(args.test[5])
@@ -214,16 +210,11 @@ if __name__ == "__main__":
 									  power=cur_power,
 									  track=1,
 									  channel=1))
-			notes = implode_notes(notes)
-			notes.sort(key=lambda x: (x['timestamp']))
-			for note in notes:
-				write_note(write_file,timestamp=note['timestamp'],
-									  track=note['track'],
-									  channel=note['channel'],
-									  event=note['event'],
-									  note=note['note'],
-									  power=note['power'])
 
+			with open('test.py','w') as write_file:
+				write_header(write_file)
+				write_notes(write_file,notes)
+				write_footer(write_file)
 
 			print ('\ntest.py file has been generated to play from notes {0}'
 				  '-{1} with power {2} to {3} in increments of {4} '
@@ -232,36 +223,32 @@ if __name__ == "__main__":
 
 		# -test [start_note] [end_note] [delay_time] [power] 
 		elif len(args.test) == 4:
+			start_note=int(args.test[0])
+			end_note=int(args.test[1])
+			delay_time=int(args.test[2])
 			power=int(args.test[3])
 
 			if(delay_time<const.NORMAL_POWER_START_DUR):
 				print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.NORMAL_POWER_START_DUR)
 
-			while cur_note <= end_note:
-				write_note(write_file=write_file,timestamp=0,
-												 track=0,
-												 channel=1,
-												 event=1,
-												 note=cur_note,
-												 power=power,
-												 hold=True)
-				write_file.write('print \'playing note {0} with power {1} ... \\n\'\n'.format(cur_note,power))
-				write_note(write_file=write_file,timestamp=delay_time,
-												 track=0,
-												 channel=1,
-												 event=0,
-												 note=cur_note,
-												 power=0,
-												 hold=True)
-				cur_note = cur_note + 1
+			notes=[]
+			for cur_note in xrange(start_note,end_note):
+				notes.append(Note(note_on=len(notes)*delay_time,
+								  note_off=(len(notes)+1)*delay_time,
+								  key=cur_note,
+								  power=power,
+								  track=1,
+								  channel=1))
+
+			with open('test.py','w') as write_file:
+				write_header(write_file)
+				write_notes(write_file,notes)
+				write_footer(write_file)
 
 			print ('\ntest.py file has been generated to play notes {0}-{1}'
 				  ' with power {2} and delay {3}ms'
 			 	  ''.format(start_note, end_note, power, delay_time))
 		else:
 			parser.print_help()
-
-		write_footer(write_file)
-
 	else:
 		parser.print_help()
