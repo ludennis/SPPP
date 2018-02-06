@@ -3,6 +3,7 @@ import re
 import const
 import math
 from note import Note
+import logging
 
 def write_header(write_file):
 	write_file.write('import serial\n')
@@ -19,7 +20,7 @@ def write_note(write_file,timestamp,track,channel,event,note,power,hold=False):
 	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp),track,channel,event,note,power))
 	write_file.write('ser.readline()\n')
 	if(hold==True and event == 1):
-		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp + const.LOW_POWER_START_DUR),track,channel,event,note,const.LOW_POWER_START_POWER))
+		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp + const.NORMAL_POWER_START_DUR),track,channel,event,note,const.NORMAL_POWER_START_POWER))
 		write_file.write('ser.readline()\n')
 	
 
@@ -47,12 +48,12 @@ def implode_notes(self):
 							  'note':int(note.key),
 							  'power':int(note.power)})
 		if note.hold_delay != None:
-			imploded_list.append({'timestamp':int(note.note_on+const.LOW_POWER_START_DUR),
+			imploded_list.append({'timestamp':int(note.note_on+const.NORMAL_POWER_START_DUR),
 								  'track':int(note.track),
 								  'channel':(note.channel),
 								  'event':int(1),
 								  'note':int(note.key),
-								  'power':int(const.LOW_POWER_START_POWER)})
+								  'power':int(const.NORMAL_POWER_START_POWER)})
 	return imploded_list
 
 
@@ -85,12 +86,12 @@ if(args.input_file):
 		if note['event']==1: note['power'] -= avg_vol
 	notes.sort(key=lambda x: (x['event'],x['power']))
 	num_percent = num_of_notes / const.NUM_PERCENT
-	low_linear_power, high_linear_power = 0.0, 0.0
+	NORMAL_linear_power, high_linear_power = 0.0, 0.0
 	for index, note in enumerate(filter(lambda x:x['event']==1 and x['power'] < 0,notes)):
 		if index<num_percent: note['power'] = tmin;
 		elif index==num_percent: 
-			low_exp_power = tmin/note['power'] if note['power']!=0 else 1
-		else: note['power'] = note['power'] * low_linear_power
+			NORMAL_exp_power = tmin/note['power'] if note['power']!=0 else 1
+		else: note['power'] = note['power'] * NORMAL_linear_power
 	for index, note in enumerate(filter(lambda x:x['event']==1 and x['power'] >= 0, reversed(notes))):
 		if index<num_percent: note['power'] = tmax;
 		elif index==num_percent: 
@@ -149,7 +150,7 @@ if(args.input_file):
 						note.set_gap(next_note,const.MIN_GAP_DUR)
 						# note_off['timestamp'] = next_note_on['timestamp'] - 1
 			#add hold delay if note is long enough
-			if note.get_dur() > const.LOW_POWER_START_DUR and note.power != const.LOW_POWER_START_POWER:
+			if note.get_dur() > const.NORMAL_POWER_START_DUR and note.power != const.NORMAL_POWER_START_POWER:
 				note.hold_delay=1
 
 	# for index,note in enumerate(notes_copy):
@@ -186,8 +187,8 @@ elif (args.test):
 		inc_pwr=int(args.test[5])
 		cur_pwr = min_pwr
 
-		if(delay_time<const.LOW_POWER_START_DUR):
-			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.LOW_POWER_START_DUR)
+		if(delay_time<const.NORMAL_POWER_START_DUR):
+			logging.warning('\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.NORMAL_POWER_START_DUR))
 
 		while cur_note <= end_note:
 			cur_pwr = min_pwr
@@ -217,8 +218,8 @@ elif (args.test):
 	elif len(args.test) == 4:
 		pwr=int(args.test[3])
 
-		if(delay_time<const.LOW_POWER_START_DUR):
-			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.LOW_POWER_START_DUR)
+		if(delay_time<const.NORMAL_POWER_START_DUR):
+			print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.NORMAL_POWER_START_DUR)
 
 		while cur_note <= end_note:
 			write_note(write_file=write_file,timestamp=0,
