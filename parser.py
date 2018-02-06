@@ -112,6 +112,38 @@ def normalize(notes):
 	return notes
 
 
+def cut_tail_and_min_note_dur(notes):
+	for index,note in enumerate(notes):
+		# check if out of bound
+		next_note = notes[index+1] if index+1 < len(notes) else None
+		#if next note exists
+		if next_note is not None:
+			#set note duration to DESIRED_NOTE_DUR if less than it
+			if note.get_dur() < const.DESIRED_NOTE_DUR:
+				note.set_dur(const.DESIRED_NOTE_DUR)
+				#change gap to 1ms if there's overlap
+				if note.is_overlapped(next_note): note.set_gap(next_note,gap=1)
+			# if gap is leses than DESIRED_GAP_DUR and that there is a gap
+			if note.get_gap(next_note) < const.DESIRED_GAP_DUR and note.get_gap(next_note) is not None:
+				# if ntoe duration is larger than DESIRED_NOTE_DUR + gap
+				# print '{} ------------------> {}'.format(note,next_note)
+				if note.get_dur() > const.DESIRED_NOTE_DUR + note.get_gap(next_note):
+					note.set_dur(note.get_dur()-const.DESIRED_GAP_DUR)
+				else:
+					# if not, set note duration to math formula
+					note.set_dur((note.get_gap(next_note) + note.get_dur()) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME_RATIO))
+					# update small release time 
+					small_release_time = (note.get_gap(next_note) + note.get_dur()) * const.MULTIPLIER_SPLIT_RELEASE_TIME_RATIO
+					if small_release_time < const.MIN_GAP_DUR:
+						note.set_gap(next_note,const.MIN_GAP_DUR)
+					else:
+						note.set_gap(next_note,small_release_time)
+					if note.is_overlapped(next_note):
+						note.set_gap(next_note,const.MIN_GAP_DUR)
+						# note_off['timestamp'] = next_note_on['timestamp'] - 1
+	return notes
+
+
 if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
@@ -150,34 +182,7 @@ if __name__ == "__main__":
 									   channel=note['channel']))
 
 		# cut tail & min note dur
-		for index,note in enumerate(notes_copy):
-			# check if out of bound
-			next_note = notes_copy[index+1] if index+1 < len(notes_copy) else None
-			#if next note exists
-			if next_note is not None:
-				#set note duration to DESIRED_NOTE_DUR if less than it
-				if note.get_dur() < const.DESIRED_NOTE_DUR:
-					note.set_dur(const.DESIRED_NOTE_DUR)
-					#change gap to 1ms if there's overlap
-					if note.is_overlapped(next_note): note.set_gap(next_note,gap=1)
-				# if gap is leses than DESIRED_GAP_DUR and that there is a gap
-				if note.get_gap(next_note) < const.DESIRED_GAP_DUR and note.get_gap(next_note) is not None:
-					# if ntoe duration is larger than DESIRED_NOTE_DUR + gap
-					# print '{} ------------------> {}'.format(note,next_note)
-					if note.get_dur() > const.DESIRED_NOTE_DUR + note.get_gap(next_note):
-						note.set_dur(note.get_dur()-const.DESIRED_GAP_DUR)
-					else:
-						# if not, set note duration to math formula
-						note.set_dur((note.get_gap(next_note) + note.get_dur()) * (1. - const.MULTIPLIER_SPLIT_RELEASE_TIME_RATIO))
-						# update small release time 
-						small_release_time = (note.get_gap(next_note) + note.get_dur()) * const.MULTIPLIER_SPLIT_RELEASE_TIME_RATIO
-						if small_release_time < const.MIN_GAP_DUR:
-							note.set_gap(next_note,const.MIN_GAP_DUR)
-						else:
-							note.set_gap(next_note,small_release_time)
-						if note.is_overlapped(next_note):
-							note.set_gap(next_note,const.MIN_GAP_DUR)
-							# note_off['timestamp'] = next_note_on['timestamp'] - 1
+		notes_copy = cut_tail_and_min_note_dur(notes_copy)
 
 		#write files
 		with open(args.input_file[:len(args.input_file)-4] + '.py','w') as write_file:
