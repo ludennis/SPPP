@@ -49,17 +49,22 @@ def compress_note(note,tmax,tmin):
 	return note
 
 
+def get_new_normal_note_dur(note):
+	new_normal_note_dur = const.BASE_NORMAL_POWER_DUR - ((((note.power - const.LOW_POWER_IGNORE)- const.TARGET_MIN)/(const.TARGET_RANGE + 1)) * const.BASE_NORMAL_POWER_DUR * const.RATIO_CUT_NORMAL_POWER_DUR)
+	return new_normal_note_dur
+
+
 def implode_notes(notes):
 	imploded_list = []
 	for note in notes:
-		#add high power first
+		#add high power
 		imploded_list.append({'timestamp':int(note.note_on),
 							  'track':int(note.track),
 							  'channel':(note.channel),
 							  'event':int(1),
 							  'note':int(note.key),
 							  'power':int(const.HIGH_POWER)})
-		#then add normal power
+		#add normal power
 		if note.get_dur() >= const.HIGH_POWER_DUR:
 			imploded_list.append({'timestamp':int(const.HIGH_POWER_DUR + note.note_on),
 								  'track':int(note.track),
@@ -67,14 +72,15 @@ def implode_notes(notes):
 								  'event':int(1),
 								  'note':int(note.key),
 								  'power':int(note.power)})
-		#then add low power
-		if note.get_dur() >= const.HIGH_POWER_DUR + const.BASE_NORMAL_POWER_DUR:
-			imploded_list.append({'timestamp':int(const.HIGH_POWER_DUR + const.BASE_NORMAL_POWER_DUR + note.note_on),
-								  'track':int(note.track),
-								  'channel':(note.channel),
-								  'event':int(1),
-								  'note':int(note.key),
-								  'power':int(const.LOW_POWER)})
+		#add low power
+		if note.get_dur() >= const.DESIRED_GAP_DUR:
+			if note.power > const.TARGET_MIN + const.LOW_POWER_IGNORE:
+				imploded_list.append({'timestamp':int(const.HIGH_POWER_DUR + get_new_normal_note_dur(note) + note.note_on),
+									  'track':int(note.track),
+									  'channel':(note.channel),
+									  'event':int(1),
+									  'note':int(note.key),
+									  'power':int(const.LOW_POWER)})
 		imploded_list.append({'timestamp':int(note.note_off),
 							  'track':int(note.track),
 							  'channel':(note.channel),
