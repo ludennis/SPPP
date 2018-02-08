@@ -22,7 +22,7 @@ def write_note(write_file,timestamp,track,channel,event,note,power,hold=False):
 	write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp),track,channel,event,note,power))
 	write_file.write('ser.readline()\n')
 	if(hold==True and event == 1):
-		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp + const.NORMAL_POWER_START_DUR),track,channel,event,note,const.NORMAL_POWER_START_POWER))
+		write_file.write('ser.write(\'<{},{},{},{},{},{}>\')\n'.format(int(timestamp + const.BASE_NORMAL_POWER_DUR),track,channel,event,note,const.NORMAL_POWER_START_POWER))
 		write_file.write('ser.readline()\n')
 	
 
@@ -68,8 +68,8 @@ def implode_notes(notes):
 								  'note':int(note.key),
 								  'power':int(note.power)})
 		#then add low power
-		if note.get_dur() >= const.HIGH_POWER_DUR + const.NORMAL_POWER_START_DUR:
-			imploded_list.append({'timestamp':int(const.HIGH_POWER_DUR + const.NORMAL_POWER_START_DUR + note.note_on),
+		if note.get_dur() >= const.HIGH_POWER_DUR + const.BASE_NORMAL_POWER_DUR:
+			imploded_list.append({'timestamp':int(const.HIGH_POWER_DUR + const.BASE_NORMAL_POWER_DUR + note.note_on),
 								  'track':int(note.track),
 								  'channel':(note.channel),
 								  'event':int(1),
@@ -206,8 +206,8 @@ if __name__ == "__main__":
 			inc_power=int(args.test[5])
 			cur_power = min_power
 
-			if(delay_time<const.NORMAL_POWER_START_DUR):
-				logging.warning('\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.NORMAL_POWER_START_DUR))
+			if(delay_time<const.BASE_NORMAL_POWER_DUR):
+				logging.warning('\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.BASE_NORMAL_POWER_DUR))
 
 			notes=[]
 			for cur_note in xrange(start_note,end_note):
@@ -236,8 +236,8 @@ if __name__ == "__main__":
 			delay_time=int(args.test[2])
 			power=int(args.test[3])
 
-			if(delay_time<const.NORMAL_POWER_START_DUR):
-				print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.NORMAL_POWER_START_DUR)
+			if(delay_time<const.BASE_NORMAL_POWER_DUR):
+				print '\nWARNING: delay_time({0}) is less than hold delay time({1})'.format(delay_time,const.BASE_NORMAL_POWER_DUR)
 
 			notes=[]
 			for cur_note in xrange(start_note,end_note):
