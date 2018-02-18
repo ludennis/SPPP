@@ -167,8 +167,9 @@ def cut_tail_and_min_note_dur(notes):
 if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
-	parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [delay_time] [power]  or -test [start_note] [end_note] [delay_time] [min_power] [max_power] [inc_power] ')
 	parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
+	parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [delay_time] [power]  or -test [start_note] [end_note] [delay_time] [min_power] [max_power] [inc_power] ')
+	parser.add_argument('-profile',nargs='*', action='store', help='-profile [profile_file]')
 	args = parser.parse_args()
 
 	if(args.input_file):
@@ -200,6 +201,22 @@ if __name__ == "__main__":
 			write_footer(write_file)
 		num_of_notes = len(notes)
 		print '\'{}.py\' has been created with {} notes'.format(args.input_file[:len(args.input_file)-4],num_of_notes)
+
+	elif (args.profile):
+		profile_dict = {}
+		profile_name = args.profile[0]
+		with open(profile_name,'r') as f:
+			for line in (f.read().splitlines()):
+				if ':' in line:
+					pair = line.split(':')
+					if (',' in pair[1]):
+						pair[1] = pair[1].split(',')
+					profile_dict[pair[0]] = pair[1]
+
+		print '\'{}\' loaded with following (key:value):'.format(profile_name)
+		for key,value in profile_dict.iteritems():
+			print '({}:{})'.format(key,value)
+		
 
 	elif (args.test):
 		# -test [start_note] [end_note] [delay_time] [min_power] [max_power] [inc_power] 
