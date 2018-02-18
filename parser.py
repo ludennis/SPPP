@@ -167,8 +167,9 @@ def cut_tail_and_min_note_dur(notes):
 if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description='Parses Midi Text file into Python commands for Arduino')
-	parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [delay_time] [power]  or -test [start_note] [end_note] [delay_time] [min_power] [max_power] [inc_power] ')
 	parser.add_argument('input_file', metavar='input', type=str, nargs='?', help='the name of the input midi text file')
+	parser.add_argument('-test', nargs='*', action='store', help='-test [start_note] [end_note] [delay_time] [power]  or -test [start_note] [end_note] [delay_time] [min_power] [max_power] [inc_power] ')
+	parser.add_argument('-profile',nargs='*', action='store', help='-profile [profile_file]')
 	args = parser.parse_args()
 
 	if(args.input_file):
