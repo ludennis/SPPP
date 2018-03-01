@@ -4,6 +4,8 @@ import const
 import math
 from note import Note
 import logging
+from os import listdir
+from os.path import isfile,isdir
 
 def write_header(write_file):
 	write_file.write('import serial\n')
@@ -173,8 +175,26 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	if (args.profile):
+		# load all the individual key profiles 
+		profile = {}
+		input_arg = args.profile[0]
+		if (isdir(input_arg)):
+			# go through each file within the dir
+			for filename in listdir(input_arg):
+				print 'Loading {} ...'.format(filename)
+				profile[filename] = {}
+				with open(input_arg + '/' + filename,'r') as read_file:
+					for line in read_file:
+						profile[filename][line.split(',')[0]] = line.split(',')[1:]
+		else: 
+			filename = input_arg
+			print 'Loading {} ...'.format(filename)
+			profile[filename] = {}
+			with open(filename,'r') as read_file:
+				for line in read_file:
+					profile[filename][line.split(',')[0]] = line.split(',')[1:]
 
-		
+
 		# profile_dict = {}
 		# profile_name = args.profile[0]
 		# with open(profile_name,'r') as f:
