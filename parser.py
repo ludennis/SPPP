@@ -108,6 +108,21 @@ def store_as_notes(notes):
 
 
 def normalize(notes):
+	
+	# song_max = 0.95 * song_max
+	# song_min = 0.95 * song_min
+	# if sustain: 
+	#	note_avg = profile['high_profile.cfg'][note.key] - profile['low_sustain_profile.cfg'][note.key]
+	# else:
+	#	note_avg = profile['high_profile.cfg'][note.key] - profile['low_no_sustain_profile.cfg'][note.key]
+	#
+	# for each note:
+	# 	frac_away_from_song_avg = (song_avg - note) / range(song_max-song_min)
+	#	note_power = range(note_max-note_min) * frac_away_from_song_avg * note_avg
+	#			   = 1/2 range(note_max-note_min)^2 * frac_away_from_song_avg
+	#
+	#
+
 	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
 	num_of_notes = len(notes)
 	sum_vol = sum(note.power for note in notes)
@@ -177,17 +192,17 @@ if __name__ == "__main__":
 	if (args.profile):
 		# load all the individual key profiles 
 		profile = {}
-		input_arg = args.profile[0]
-		if (isdir(input_arg)):
+		profile_arg = args.profile[0]
+		if (isdir(profile_arg)):
 			# go through each file within the dir
-			for filename in listdir(input_arg):
+			for filename in listdir(profile_arg):
 				print 'Loading {} ...'.format(filename)
 				profile[filename] = {}
-				with open(input_arg + '/' + filename,'r') as read_file:
+				with open(profile_arg + '/' + filename,'r') as read_file:
 					for line in read_file:
 						profile[filename][line.split(',')[0]] = line.split(',')[1:]
 		else: 
-			filename = input_arg
+			filename = profile_arg
 			print 'Loading {} ...'.format(filename)
 			profile[filename] = {}
 			with open(filename,'r') as read_file:
