@@ -173,19 +173,21 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	if (args.profile):
-		profile_dict = {}
-		profile_name = args.profile[0]
-		with open(profile_name,'r') as f:
-			for line in (f.read().splitlines()):
-				if ':' in line:
-					pair = line.split(':')
-					if (',' in pair[1]):
-						pair[1] = pair[1].split(',')
-					profile_dict[pair[0]] = pair[1]
 
-		print '\'{}\' loaded with following (key:value):'.format(profile_name)
-		for key,value in profile_dict.iteritems():
-			print '({}:{})'.format(key,value)
+		
+		# profile_dict = {}
+		# profile_name = args.profile[0]
+		# with open(profile_name,'r') as f:
+		# 	for line in (f.read().splitlines()):
+		# 		if ':' in line:
+		# 			pair = line.split(':')
+		# 			if (',' in pair[1]):
+		# 				pair[1] = pair[1].split(',')
+		# 			profile_dict[pair[0]] = pair[1]
+
+		# print '\'{}\' loaded with following (key:value):'.format(profile_name)
+		# for key,value in profile_dict.iteritems():
+		# 	print '({}:{})'.format(key,value)
 
 	if(args.input_file):
 		# read from txt and store into lists of <timestamp,event,note,power>
