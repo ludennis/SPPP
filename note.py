@@ -4,7 +4,7 @@ with object oriented approach to simply operations
 '''
 
 class Note(object):
-	def __init__(self,note_on,note_off,key,power,track=None,channel=None,event=None,sustain=0):
+	def __init__(self,note_on,note_off,key,power,track=0,channel=0,event=-1,sustain=0):
 		self.note_on = note_on
 		self.note_off = note_off
 		self.key = key
