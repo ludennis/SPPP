@@ -41,9 +41,9 @@ def write_notes(write_file,notes):
 							  power=note['power'])
 
 
-def adjust_note_vol(note,avg):
-	note.power = int((note.power-avg) * const.NOTE_SCALE[note.key] + const.NOTE_OFFSET[note.key] + avg)
-	return note
+# def adjust_note_vol(note,avg):
+# 	note.power = int((note.power-avg) * const.NOTE_SCALE[note.key] + const.NOTE_OFFSET[note.key] + avg)
+# 	return note
 
 
 def compress_note(note,tmax,tmin):
@@ -103,50 +103,70 @@ def store_as_notes(notes):
 								   key=note['note'],
 								   power=note['power'],
 								   track=note['track'],
-								   channel=note['channel']))
+								   event=note['event'],
+								   channel=note['channel'],
+								   sustain=note['sustain']))
 	return notes_copy
 
 
 def normalize(notes):
 	
-	# song_max = 0.95 * song_max
-	# song_min = 0.95 * song_min
-	# if sustain: 
-	#	note_avg = profile['high_profile.cfg'][note.key] - profile['low_sustain_profile.cfg'][note.key]
-	# else:
-	#	note_avg = profile['high_profile.cfg'][note.key] - profile['low_no_sustain_profile.cfg'][note.key]
-	#
+	# song_max = (100 - NUM_PERCENT)% * song_max
+	# song_min = (100 - NUM_PERCENT)% * song_min
+
 	# for each note:
-	# 	frac_away_from_song_avg = (song_avg - note) / range(song_max-song_min)
-	#	note_power = range(note_max-note_min) * frac_away_from_song_avg * note_avg
-	#			   = 1/2 range(note_max-note_min)^2 * frac_away_from_song_avg
-	#
+	# 	if sustain: 
+	#		note_avg = profile['high_profile.cfg'][note.key] - profile['low_sustain_profile.cfg'][note.key]
+	# 	else:
+	#		note_avg = profile['high_profile.cfg'][note.key] - profile['low_no_sustain_profile.cfg'][note.key]
+	# 	frac_away_from_song_avg = (note.power - song_avg) / range(song_max-song_min)
+	#	note_power = range(note_max-note_min) * frac_away_from_song_avg + note_avg
 	#
 
-	tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
-	num_of_notes = len(notes)
-	sum_vol = sum(note.power for note in notes)
-	avg_vol = sum_vol / num_of_notes
-	num_percent = num_of_notes / const.NUM_PERCENT
+	note_power_list = [note.power for note in notes]
+	song_max = sorted(note_power_list)[::-1][len(notes)*const.NUM_PERCENT/100]
+	song_min = sorted(note_power_list)[len(notes)*const.NUM_PERCENT/100]
+	song_avg = sum(note_power_list)/len(notes)
+	nor_notes = []
 
-	for note in notes:
-		note.power -= avg_vol
-	notes.sort(key=lambda x: x.power)
-	low_linear_power, high_linear_power = 0.0, 0.0
-	for index, note in enumerate(filter(lambda x:x.power < 0,notes)):
-		if index<num_percent: note.power = tmin;
-		elif index==num_percent: 
-			low_exp_power = tmin/note.power if note.power!=0 else 1
-		else: note.power = note.power * low_linear_power
-	for index, note in enumerate(filter(lambda x:x.power >= 0, reversed(notes))):
-		if index<num_percent: note.power = tmax;
-		elif index==num_percent: 
-			high_exp_power=tmax/note.power if note.power!=0 else 1
-		else: note.power = note.power * high_linear_power
-	for index, note in enumerate(notes):
-		note.power = int(note.power + const.TARGET_MAX - tmax)
-		note=adjust_note_vol(note=note,avg=avg_vol)
-	return notes
+	for i,note in enumerate(notes):
+		note_max = profile['high'][note.key][2]
+		note_min = profile['low_sus'][note.key][2] if note.sustain==1 else \
+				   profile['low_no_sus'][note.key][2]
+		note_avg = (note_max+note_min)/2
+		frac_away_from_song_avg = (note.power - song_avg) / (song_max-song_min+1)
+		nor_power = (note_max-note_min) * frac_away_from_song_avg + note_avg
+		nor_notes.append(Note(note_on=note.note_on,
+							  note_off=note.note_off,
+							  key=note.key,
+							  power=nor_power,
+							  sustain=note.sustain))
+
+	return nor_notes
+	# tmax, tmin = (const.TARGET_MAX-const.TARGET_MIN)/2.0, (const.TARGET_MIN-const.TARGET_MAX)/2.0
+	# num_of_notes = len(notes)
+	# sum_vol = sum([note.power for note in notes])
+	# avg_vol = sum_vol / num_of_notes
+	# num_percent = num_of_notes / const.NUM_PERCENT
+
+	# for note in notes:
+	# 	note.power -= avg_vol
+	# notes.sort(key=lambda x: x.power)
+	# low_linear_power, high_linear_power = 0.0, 0.0
+	# for index, note in enumerate(filter(lambda x:x.power < 0,notes)):
+	# 	if index<num_percent: note.power = tmin;
+	# 	elif index==num_percent: 
+	# 		low_exp_power = tmin/note.power if note.power!=0 else 1
+	# 	else: note.power = note.power * low_linear_power
+	# for index, note in enumerate(filter(lambda x:x.power >= 0, reversed(notes))):
+	# 	if index<num_percent: note.power = tmax;
+	# 	elif index==num_percent: 
+	# 		high_exp_power=tmax/note.power if note.power!=0 else 1
+	# 	else: note.power = note.power * high_linear_power
+	# for index, note in enumerate(notes):
+	# 	note.power = int(note.power + const.TARGET_MAX - tmax)
+	# 	note=adjust_note_vol(note=note,avg=avg_vol)
+	# return notes
 
 
 def cut_tail_and_min_note_dur(notes):
@@ -194,20 +214,20 @@ if __name__ == "__main__":
 		profile = {}
 		profile_arg = args.profile[0]
 		if (isdir(profile_arg)):
-			# go through each file within the dir
 			for filename in listdir(profile_arg):
 				print 'Loading {} ...'.format(filename)
-				profile[filename] = {}
 				with open(profile_arg + '/' + filename,'r') as read_file:
+					filename = filename.split('.')[0]
+					profile[filename] = {}
 					for line in read_file:
-						profile[filename][line.split(',')[0]] = line.split(',')[1:]
+						profile[filename][int(line.split(',')[0])] = [int(i) for i in line.split(',')[1:]]
 		else: 
 			filename = profile_arg
 			print 'Loading {} ...'.format(filename)
 			profile[filename] = {}
 			with open(filename,'r') as read_file:
 				for line in read_file:
-					profile[filename][line.split(',')[0]] = line.split(',')[1:]
+					profile[filename][int(line.split(',')[0])] = [int(i) for i in line.split(',')[1:]]
 
 
 		# profile_dict = {}
@@ -226,16 +246,21 @@ if __name__ == "__main__":
 
 	if(args.input_file):
 		# read from txt and store into lists of <timestamp,event,note,power>
-		midi_notes, notes = [], []
+		midi_notes, notes, sustain = [], [], 0
 		with open(args.input_file,'r') as read_file:
 			for line in read_file:		
-				timestamp,track,channel,event,note,power=line.strip().split(',')
-				midi_notes.append({'timestamp':int(timestamp),
-								   'track':int(track),
-								   'channel':(channel),
-								   'event':int(event),
-								   'note':int(note),
-								   'power':int(power)})
+				timestamp,track,channel,event,note,power=[int(i) for i in line.split(',')]
+				if event == 3 and note == 64 and power == 0: 
+					sustain = 0
+				elif event == 3 and note == 64 and power > 0: 
+					sustain = 1
+				midi_notes.append({'timestamp':timestamp,
+								   'track':track,
+								   'channel':channel,
+								   'event':event,
+								   'note':note,
+								   'power':power,
+								   'sustain':sustain})
 		
 		#store as Note class
 		notes=store_as_notes(midi_notes)
@@ -313,9 +338,9 @@ if __name__ == "__main__":
 				write_notes(write_file,notes)
 				write_footer(write_file)
 
-			print ('\ntest.py file has been generated to play notes {0}-{1}'
-				  ' with power {2} and delay {3}ms'
-			 	  ''.format(start_note, end_note, power, delay_time))
+			print '\ntest.py file has been generated to play notes {0}-{1} \
+				   with power {2} and delay {3}ms' \
+			 	   .format(start_note, end_note, power, delay_time)
 		else:
 			parser.print_help()
 	else:
