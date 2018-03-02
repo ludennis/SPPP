@@ -16,6 +16,10 @@
 * `parser.py [input_text] --tmin=[target_min] --tmax=[target_max]` (e.g. `parser.py departures.txt --tmin=105 --tmax=180`)
 	note: default value is `--tmin=105` and `--tmax=180` if you don't specify
 
+## Using Profiles for Individual Keys
+example:
+* `parser.py midi/test.txt -profile 'profiles'`
+
 ## TODO's
 - [ ] add version
 - [ ] to read straight from midi file
